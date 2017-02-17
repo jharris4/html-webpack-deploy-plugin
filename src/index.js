@@ -21,7 +21,7 @@ function setPluginOptions (pluginOptions) {
     let packageOutputPath = packageConfig.outputPath ? packageConfig.outputPath : outputPath;
     let packageVersion = 'no_version';
     try {
-      let packageNpmPackage = require('./' + path.join(packagePath, packageName, 'package'));
+      let packageNpmPackage = require(path.join(packageName, 'package'));
       packageVersion = packageNpmPackage ? packageNpmPackage.version : "no_version";
     }
     catch (error) {
@@ -34,7 +34,7 @@ function setPluginOptions (pluginOptions) {
     const assetKeys = Object.keys(assets);
     assetKeys.forEach(function(assetKey) {
       copyList.push({
-        from: path.resolve(__dirname, path.join(packagePath, packageName, assetKey)),
+        from: path.join(process.cwd(), packagePath, packageName, assetKey),
         to: path.join(packageOutputPath, assets[assetKey])
       });
     });

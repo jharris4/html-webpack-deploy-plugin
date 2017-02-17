@@ -60,7 +60,6 @@ describe('html-webpack-deploy-assets-plugin', function() {
       plugins: [
         new HtmlWebpackPlugin(),
         new HtmlWebpackDeployAssetsPlugin({
-          "packagePath": "../node_modules",
           "packages": {
             "bootstrap": {
               "assets": {
