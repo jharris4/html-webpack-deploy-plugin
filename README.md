@@ -13,6 +13,58 @@ Install the plugin with npm:
 $ npm install --save-dev html-webpack-deploy-assets-plugin
 ```
 
+Options
+-------
+The available options are:
+
+- `packagePath`: `string`
+
+  The path to installed packages, relative to the current directory. Default is `node_modules`.
+
+- `append`: `boolean`
+
+  Specifies whether the assets will be appended (`true`) or prepended (`false`) to the list of assets in the html file. Default is `false`.
+
+- `publicPath`: `boolean` or `string`
+
+  Specifying whether the assets should be prepended with webpack's public path or a custom publicPath (`string`).
+
+  A value of `false` may be used to disable prefixing with webpack's publicPath, or a value like `myPublicPath/` may be used to prefix all assets with the given string. Default is `true`.
+
+- `outputPath`: `string`
+
+  A directory name that will be created for each of the deployed assets.
+
+    Instances of `[name]` will be replaced with the package name.
+    Instances of `[version]` will be replaced with the package version.
+
+  Default is `[name]-[version]`.
+
+- `packages`: `object`
+
+  Specifies the definition of the assets to be deployed. Defaults is `{}`.
+
+  The keys/properties of the packages option must be the name of an installed package, and the definition must be
+  an object with the following properties:
+
+    - 'outputPath': `string`
+
+    Allows the global `outputPath` to be overriden on a per-package basis. Default is the global value.
+
+    - `assets`: `object`
+
+    Specifies files or directories to be copied from the package's directory.
+
+    The keys/properies are the asset to be copied, and the values are the target asset location within webpack's output directory.
+
+    These are used as the from & to properties for the internal usage of the [copy-webpack-plugin](https://github.com/kevlened/copy-webpack-plugin)
+
+    - `entries`: `array`
+
+    Specifies files to be included in the html file.
+
+    The file paths should be relative to webpack's output directory.
+
 Example
 -------
 Deploying bootstrap css and fonts:
