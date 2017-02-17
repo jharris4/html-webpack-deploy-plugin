@@ -19,7 +19,7 @@
     "url": "https://github.com/jharris4/html-webpack-deploy-assets-plugin/issues"
   },
   "homepage": "https://github.com/jharris4/html-webpack-deploy-assets-plugin#readme",
-  "main": "index.js",
+  "main": "src/index.js",
   "peerDependencies": {
     "html-webpack-plugin": "^2.24.0",
     "webpack": "^2.2.1"
