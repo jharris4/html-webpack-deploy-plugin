@@ -92,4 +92,29 @@ describe('html-webpack-deploy-assets-plugin', function() {
       });
     });
   });
+
+  it('it copies and includes local assets', function(done) {
+    webpack({
+      entry: {
+        app: path.join(__dirname, 'fixtures', 'entry.js')
+      },
+      output: {
+        path: OUTPUT_DIR,
+        filename: '[name].js'
+      },
+      plugins: [
+        new HtmlWebpackPlugin(),
+        new HtmlWebpackDeployAssetsPlugin({
+          "assets": {
+            "test/fixtures/entry.js": "fixtures"
+          }
+        })
+      ]
+    }, function (err, result) {
+      expect(err).toNotExist();
+      expect(JSON.stringify(result.compilation.errors)).toBe('[]');
+      expect(directoriesAreEqual('fixtures', '../dist/fixtures')).toBe(true);
+      done();
+    });
+  });
 });
