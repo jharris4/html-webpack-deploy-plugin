@@ -42,7 +42,7 @@ The available options are:
 
 - `packages`: `object`
 
-  Specifies the definition of the assets to be deployed. Defaults is `{}`.
+  Specifies the definition of the assets from installed packages to be deployed. Defaults is `{}`.
 
   The keys/properties of the packages option must be the name of an installed package, and the definition must be
   an object with the following properties:
@@ -65,9 +65,15 @@ The available options are:
 
     The file paths should be relative to webpack's output directory.
 
+- `assets`: `object`
+
+  Specifies the definition of the local assets to be deployed. Defaults is `{}`.
+
+  The keys/properies are the asset to be copied, and the values are the target asset location within webpack's output directory.
+
 Example
 -------
-Deploying bootstrap css and fonts:
+Deploying bootstrap css and fonts and an assets directory from local files:
 
 ```javascript
 plugins: [
@@ -84,6 +90,9 @@ plugins: [
           "css/bootstrap-theme.min.css"
         ]
       }
+    },
+    "assets": {
+      "src/assets": "assets/"
     }
   })
 ]
@@ -110,3 +119,4 @@ Note that additionally, the contents of the following directories will be copied
 
 `node_modules/bootstrap/dist/css` -> `dist/bootstrap-3.3.7/css`
 `node_modules/bootstrap/dist/fonts` -> `dist/bootstrap-3.3.7/fonts`
+`src/assets` -> `dist/assets`
