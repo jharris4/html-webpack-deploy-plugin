@@ -5,6 +5,26 @@ const path = require("path");
 const PATH_REGEXP_NAME = /\[name\]/gi;
 const PATH_REGEXP_VERSION = /\[version\]/gi;
 
+/*
+const sample = {
+  "assets": {
+    "src/assets": "assets"
+  },
+  "packages": {
+    "bootstrap": {
+      "assets": {
+        "dist/css": "css/",
+        "dist/fonts": "fonts/"
+      },
+      "entries": [
+        "css/bootstrap.min.css",
+        "css/bootstrap-theme.min.css"
+      ]
+    }
+  }
+};
+ */
+
 function setPluginOptions (pluginOptions) {
   const copyList = [];
   const includeList = [];
@@ -13,6 +33,15 @@ function setPluginOptions (pluginOptions) {
 
   const packagePath = pluginOptions.packagePath || 'node_modules';
   const outputPath = pluginOptions.outputPath || '[name]-[version]';
+
+  const assetMap = pluginOptions.assets || {};
+  const assetKeys = Object.keys(assetMap);
+  assetKeys.forEach(function(assetKey) {
+    copyList.push({
+      from: path.join(process.cwd(), assetKey),
+      to: assetMap[assetKey]
+    });
+  });
 
   const packageMap = pluginOptions.packages || {};
   const packageNames = Object.keys(packageMap);
@@ -30,12 +59,12 @@ function setPluginOptions (pluginOptions) {
     packageOutputPath = packageOutputPath.replace(PATH_REGEXP_NAME, packageName);
     packageOutputPath = packageOutputPath.replace(PATH_REGEXP_VERSION, packageVersion);
 
-    const assets = packageConfig.assets || {};
-    const assetKeys = Object.keys(assets);
-    assetKeys.forEach(function(assetKey) {
+    const packageAssets = packageConfig.assets || {};
+    const packageAssetKeys = Object.keys(packageAssets);
+    packageAssetKeys.forEach(function(packageAssetKey) {
       copyList.push({
-        from: path.join(process.cwd(), packagePath, packageName, assetKey),
-        to: path.join(packageOutputPath, assets[assetKey])
+        from: path.join(process.cwd(), packagePath, packageName, packageAssetKey),
+        to: path.join(packageOutputPath, packageAssets[packageAssetKey])
       });
     });
 
