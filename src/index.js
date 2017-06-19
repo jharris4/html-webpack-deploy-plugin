@@ -1,6 +1,7 @@
 const webpack = require("webpack");
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const HtmlWebpackIncludeAssetsPlugin = require('html-webpack-include-assets-plugin');
+const fs = require("fs");
 const path = require("path");
 const PATH_REGEXP_NAME = /\[name\]/gi;
 const PATH_REGEXP_VERSION = /\[version\]/gi;
@@ -49,12 +50,13 @@ function setPluginOptions (pluginOptions) {
     let packageConfig = packageMap[packageName];
     let packageOutputPath = packageConfig.outputPath ? packageConfig.outputPath : outputPath;
     let packageVersion = 'no_version';
+    let packageFilePath = path.join(process.cwd(), packagePath, packageName, 'package.json');
     try {
-      let packageNpmPackage = require(path.join(packageName, 'package'));
+      let packageNpmPackage = JSON.parse(fs.readFileSync(packageFilePath, 'utf8'));
       packageVersion = packageNpmPackage ? packageNpmPackage.version : "no_version";
     }
     catch (error) {
-      throw new Error('Could not find package.json while trying to deploy assets for package named: ' + packageName);
+      throw new Error('Could not find package.json while trying to deploy assets for package named: ' + packageName + ' - ' + packageFilePath);
     }
     packageOutputPath = packageOutputPath.replace(PATH_REGEXP_NAME, packageName);
     packageOutputPath = packageOutputPath.replace(PATH_REGEXP_VERSION, packageVersion);
