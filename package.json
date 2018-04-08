@@ -21,22 +21,22 @@
   "homepage": "https://github.com/jharris4/html-webpack-deploy-assets-plugin#readme",
   "main": "src/index.js",
   "peerDependencies": {
-    "html-webpack-plugin": "^2.24.0",
-    "webpack": "^2.2.1 || ^3.0.0"
+    "html-webpack-plugin": "^2.24.0 || ^3.0.0",
+    "webpack": "^2.2.1 || ^3.0.0 || ^4.0.0"
   },
   "dependencies": {
-    "copy-webpack-plugin": "^4.0.1",
-    "html-webpack-include-assets-plugin": ">=0.0.8"
+    "copy-webpack-plugin": "^4.5.1",
+    "html-webpack-include-assets-plugin": "^1.0.4"
   },
   "devDependencies": {
     "bootstrap": "3.3.7",
     "cheerio": "^1.0.0-rc.2",
     "dir-compare": "^1.4.0",
     "expect": "1.20.2",
-    "html-webpack-plugin": "^2.30.1",
-    "mocha": "^3.5.3",
+    "html-webpack-plugin": "^3.2.0",
+    "mocha": "^5.0.5",
     "rimraf": "^2.6.2",
-    "webpack": "^3.6.0"
+    "webpack": "^4.5.0"
   },
   "scripts": {
     "test": "mocha 'test/*_spec.js'"
