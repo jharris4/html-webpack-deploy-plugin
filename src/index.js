@@ -90,10 +90,8 @@ class HtmlWebpackDeployAssetsPlugin {
   }
 
   apply (compiler) {
-    compiler.apply(
-      new CopyWebpackPlugin(this.copyList),
-      new HtmlWebpackIncludeAssetsPlugin({ assets: this.includeList, append: this.append, publicPath: this.publicPath })
-    );
+    new CopyWebpackPlugin(this.copyList).apply(compiler);
+    new HtmlWebpackIncludeAssetsPlugin({ assets: this.includeList, append: this.append, publicPath: this.publicPath }).apply(compiler);
   }
 }
 module.exports = HtmlWebpackDeployAssetsPlugin;
