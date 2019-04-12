@@ -1,6 +1,6 @@
 {
   "name": "html-webpack-deploy-assets-plugin",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Add the ability to deploy assets from node_modules packages",
   "repository": {
     "type": "git",
@@ -26,7 +26,7 @@
   },
   "dependencies": {
     "copy-webpack-plugin": "^5.0.2",
-    "html-webpack-include-assets-plugin": "^1.0.8"
+    "html-webpack-include-assets-plugin": "^1.0.9"
   },
   "devDependencies": {
     "bootstrap": "^4.3.1",
