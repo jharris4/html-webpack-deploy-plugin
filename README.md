@@ -71,6 +71,30 @@ The available options are:
 
   The keys/properies are the asset to be copied, and the values are the target asset location within webpack's output directory.
 
+- `links`: `array`
+
+  Specifies the definition of the links to be deployed. Defaults is `[]`.
+
+  The objects in the links are of the shape:
+
+  ```javascript
+  {
+    href: "path/to/asset", // required - must be a string
+    rel: "icon",           // required - must be a string
+    sizes: '16x16',            // example of optional extra attribute
+    anyOtherAttribute: 'value'
+  }
+  ```
+
+  For which the following would be injected into the html header:
+
+  ```html
+  <head>
+    <link href="${webpack.publicPath}/path/to/asset" rel="icon" sizes="16x16" anyOtherAttribute="value"/>
+  </head>
+  ```
+
+
 Example
 -------
 Deploying bootstrap css and fonts and an assets directory from local files:
@@ -94,6 +118,12 @@ plugins: [
     "assets": {
       "src/assets": "assets/"
     }
+    "link": [
+      {
+        "href": "/assets/icon.png",
+        "rel": "icon"
+      }
+    ]
   })
 ]
 ```
@@ -108,6 +138,8 @@ This will generate a `dist/index.html` with your webpack bundled output **and** 
    <title>Webpack App</title>
    <link href="bootstrap-3.3.7/css/bootstrap.min.css" rel="stylesheet">
    <link href="bootstrap-3.3.7/css/bootstrap-theme.min.css" rel="stylesheet">
+   <link href="bootstrap-3.3.7/css/bootstrap-theme.min.css" rel="stylesheet">
+   <link href="/assets/icon.png" rel="icon">
  </head>
  <body>
    <script src="index_bundle.js"></script>

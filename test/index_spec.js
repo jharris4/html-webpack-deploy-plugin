@@ -63,12 +63,10 @@ describe('html-webpack-deploy-assets-plugin', function() {
           "packages": {
             "bootstrap": {
               "assets": {
-                "dist/css": "css/",
-                "dist/fonts": "fonts/"
+                "dist/css": "css/"
               },
               "entries": [
-                "css/bootstrap.min.css",
-                "css/bootstrap-theme.min.css"
+                "css/bootstrap.min.css"
               ]
             }
           }
@@ -79,15 +77,13 @@ describe('html-webpack-deploy-assets-plugin', function() {
       expect(JSON.stringify(result.compilation.errors)).toBe('[]');
       var htmlFile = path.resolve(__dirname, '../dist/index.html');
       fs.readFile(htmlFile, 'utf8', function (er, data) {
-        expect(directoriesAreEqual('../node_modules/bootstrap/dist/css', '../dist/bootstrap-3.3.7/css')).toBe(true);
-        expect(directoriesAreEqual('../node_modules/bootstrap/dist/fonts', '../dist/bootstrap-3.3.7/fonts')).toBe(true);
+        expect(directoriesAreEqual('../node_modules/bootstrap/dist/css', '../dist/bootstrap-4.3.1/css')).toBe(true);
         expect(er).toNotExist();
         var $ = cheerio.load(data);
         expect($('script').length).toBe(1);
-        expect($('link').length).toBe(2);
+        expect($('link').length).toBe(1);
         expect($('script[src="app.js"]').toString()).toBe('<script type="text/javascript" src="app.js"></script>');
-        expect($('link[href="bootstrap-3.3.7/css/bootstrap.min.css"]').toString()).toBe('<link href="bootstrap-3.3.7/css/bootstrap.min.css" rel="stylesheet">');
-        expect($('link[href="bootstrap-3.3.7/css/bootstrap-theme.min.css"]').toString()).toBe('<link href="bootstrap-3.3.7/css/bootstrap-theme.min.css" rel="stylesheet">');
+        expect($('link[href="bootstrap-4.3.1/css/bootstrap.min.css"]').toString()).toBe('<link href="bootstrap-4.3.1/css/bootstrap.min.css" rel="stylesheet">');
         done();
       });
     });
@@ -115,6 +111,44 @@ describe('html-webpack-deploy-assets-plugin', function() {
       expect(JSON.stringify(result.compilation.errors)).toBe('[]');
       expect(directoriesAreEqual('fixtures', '../dist/fixtures')).toBe(true);
       done();
+    });
+  });
+
+  it('it copies and includes links', function (done) {
+    webpack({
+      entry: {
+        app: path.join(__dirname, 'fixtures', 'entry.js')
+      },
+      output: {
+        publicPath: '/public-path/',
+        path: OUTPUT_DIR,
+        filename: '[name].js'
+      },
+      plugins: [
+        new HtmlWebpackPlugin(),
+        new HtmlWebpackDeployAssetsPlugin({
+          "assets": {
+          },
+          "links": [
+            {
+              "href": "the-href",
+              "rel": "the-rel"
+            }
+          ]
+        })
+      ]
+    }, function (err, result) {
+      expect(err).toNotExist();
+      expect(JSON.stringify(result.compilation.errors)).toBe('[]');
+      var htmlFile = path.resolve(__dirname, '../dist/index.html');
+      fs.readFile(htmlFile, 'utf8', function (er, data) {
+        expect(er).toNotExist();
+        var $ = cheerio.load(data);
+        expect($('script').length).toBe(1);
+        expect($('link').length).toBe(1);
+        expect($('link[href="/public-path/the-href"]').toString()).toBe('<link href="/public-path/the-href" rel="the-rel">');
+        done();
+      });
     });
   });
 });
