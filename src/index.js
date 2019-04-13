@@ -11,7 +11,7 @@ const sample = {
   "assets": {
     "src/assets": "assets"
   },
-  "links": [
+  "cssAssets": [
     {
       rel: "icon",
       href: "assets/apple-touch-icon.png"
@@ -61,7 +61,7 @@ function setPluginOptions (pluginOptions) {
     });
   });
 
-  const links = pluginOptions.links || [];
+  const cssAssets = pluginOptions.cssAssets || [];
 
   const packageMap = pluginOptions.packages || {};
   const packageNames = Object.keys(packageMap);
@@ -100,7 +100,7 @@ function setPluginOptions (pluginOptions) {
     publicPath,
     copyList,
     includeList,
-    links
+    cssAssets
   };
 }
 
@@ -111,7 +111,7 @@ class HtmlWebpackDeployAssetsPlugin {
 
   apply (compiler) {
     new CopyWebpackPlugin(this.copyList).apply(compiler);
-    new HtmlWebpackIncludeAssetsPlugin({ assets: this.includeList, links: this.links, append: this.append, publicPath: this.publicPath }).apply(compiler);
+    new HtmlWebpackIncludeAssetsPlugin({ assets: this.includeList, cssAssets: this.cssAssets, append: this.append, publicPath: this.publicPath }).apply(compiler);
   }
 }
 module.exports = HtmlWebpackDeployAssetsPlugin;
