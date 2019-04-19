@@ -114,7 +114,7 @@ describe('html-webpack-deploy-assets-plugin', function() {
     });
   });
 
-  it('it copies and includes cssAssets', function (done) {
+  it('it copies and includes links', function (done) {
     webpack({
       entry: {
         app: path.join(__dirname, 'fixtures', 'entry.js')
@@ -129,9 +129,9 @@ describe('html-webpack-deploy-assets-plugin', function() {
         new HtmlWebpackDeployAssetsPlugin({
           "assets": {
           },
-          "cssAssets": [
+          "links": [
             {
-              "href": "the-href",
+              "path": "the-href",
               "attributes": {
                 "rel": "the-rel"
               }

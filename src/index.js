@@ -11,21 +11,27 @@ const sample = {
   "assets": {
     "src/assets": "assets"
   },
-  "cssAssets": [
+  "links": [
     {
-      rel: "icon",
-      href: "assets/apple-touch-icon.png"
+      path: "assets/apple-touch-icon.png",
+      attributes: {
+        rel: "icon"
+      }
     },
     {
-      rel: "icon",
-      type: "image/png",
-      sizes: "32x32",
-      href: "assets/favicon-32x32.png"
+      path: "assets/favicon-32x32.png",
+      attributes: {
+        rel: "icon",
+        type: "image/png",
+        sizes: "32x32"
+      }
     },
     {
-      rel: "mask-icon",
-      href: "assets/safari-pinned-tab.svg",
-      color: "#404040"
+      path: "assets/safari-pinned-tab.svg",
+      attributes: {
+        rel: "mask-icon",
+        color: "#404040"
+      }
     }
   ],
   "packages": {
@@ -48,26 +54,27 @@ function setPluginOptions (pluginOptions) {
   const includeList = [];
   const append = pluginOptions.append !== undefined ? pluginOptions.append : false;
   const publicPath = pluginOptions.publicPath !== undefined ? pluginOptions.publicPath : true;
+  const useCdn = pluginOptions.useCdn !== undefined ? pluginOptions.useCdn : false;
+  const cdnResolver = (useCdn && pluginOptions.cdnResolver !== undefined) ? pluginOptions.cdnResolver : null;
 
   const packagePath = pluginOptions.packagePath || 'node_modules';
   const outputPath = pluginOptions.outputPath || '[name]-[version]';
 
   const assetMap = pluginOptions.assets || {};
   const assetKeys = Object.keys(assetMap);
-  assetKeys.forEach(function(assetKey) {
+  assetKeys.forEach(assetKey => {
     copyList.push({
       from: path.join(process.cwd(), assetKey),
       to: assetMap[assetKey]
     });
   });
 
-  const cssAssets = pluginOptions.cssAssets || [];
+  const links = pluginOptions.links || [];
 
   const packageMap = pluginOptions.packages || {};
   const packageNames = Object.keys(packageMap);
-  packageNames.forEach(function(packageName) {
+  packageNames.forEach(packageName => {
     let packageConfig = packageMap[packageName];
-    let packageOutputPath = packageConfig.outputPath ? packageConfig.outputPath : outputPath;
     let packageVersion = 'no_version';
     let packageFilePath = path.join(process.cwd(), packagePath, packageName, 'package.json');
     try {
@@ -77,22 +84,41 @@ function setPluginOptions (pluginOptions) {
     catch (error) {
       throw new Error('Could not find package.json while trying to deploy assets for package named: ' + packageName + ' - ' + packageFilePath);
     }
-    packageOutputPath = packageOutputPath.replace(PATH_REGEXP_NAME, packageName);
-    packageOutputPath = packageOutputPath.replace(PATH_REGEXP_VERSION, packageVersion);
 
-    const packageAssets = packageConfig.assets || {};
-    const packageAssetKeys = Object.keys(packageAssets);
-    packageAssetKeys.forEach(function(packageAssetKey) {
-      copyList.push({
-        from: path.join(process.cwd(), packagePath, packageName, packageAssetKey),
-        to: path.join(packageOutputPath, packageAssets[packageAssetKey])
+    if (packageConfig.cdnEntries && cdnResolver) {
+      packageConfig.cdnEntries.forEach(function (cdnEntry) {
+        includeList.push(cdnResolver({ name: packageName, version: packageVersion, path: cdnEntry }));
       });
-    });
+    }
+    else {
+      let packageOutputPath = packageConfig.outputPath ? packageConfig.outputPath : outputPath;
+      packageOutputPath = packageOutputPath.replace(PATH_REGEXP_NAME, packageName);
+      packageOutputPath = packageOutputPath.replace(PATH_REGEXP_VERSION, packageVersion);
 
-    const entries = packageConfig.entries || [];
-    entries.forEach(function(entry) {
-      includeList.push(path.join(packageOutputPath, entry));
-    });
+      const entries = packageConfig.entries || [];
+      entries.forEach(entry => {
+        includeList.push(path.join(packageOutputPath, entry));
+      });
+
+      const packageAssets = packageConfig.assets || {};
+      const packageAssetKeys = Object.keys(packageAssets);
+      packageAssetKeys.forEach(packageAssetKey => {
+        copyList.push({
+          from: path.join(process.cwd(), packagePath, packageName, packageAssetKey),
+          to: path.join(packageOutputPath, packageAssets[packageAssetKey])
+        });
+      });
+    }
+    if (packageConfig.cdnAsset && cdnResolver) {
+      includeList.push(cdnResolver({ name: packageName, version: packageVersion, path: cdnAsset }));
+    }
+    else {
+      let packageAsset = packageConfig.asset || "";
+      if (packageAsset) {
+
+      }
+    }
+
   });
 
   return {
@@ -100,7 +126,7 @@ function setPluginOptions (pluginOptions) {
     publicPath,
     copyList,
     includeList,
-    cssAssets
+    links
   };
 }
 
@@ -109,9 +135,10 @@ class HtmlWebpackDeployAssetsPlugin {
     Object.assign(this, setPluginOptions(pluginOptions))
   }
 
-  apply (compiler) {
+  apply(compiler) {
+    const externals = compiler.options.externals || {};
     new CopyWebpackPlugin(this.copyList).apply(compiler);
-    new HtmlWebpackIncludeAssetsPlugin({ assets: this.includeList, cssAssets: this.cssAssets, append: this.append, publicPath: this.publicPath }).apply(compiler);
+    new HtmlWebpackIncludeAssetsPlugin({ assets: this.includeList, links: this.links, append: this.append, publicPath: this.publicPath }).apply(compiler);
   }
 }
 module.exports = HtmlWebpackDeployAssetsPlugin;
