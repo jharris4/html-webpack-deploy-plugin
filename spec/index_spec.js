@@ -1,18 +1,23 @@
-var rimraf = require('rimraf');
-var expect = require('expect');
-var path = require('path');
-var fs = require('fs');
-var dirCompare = require('dir-compare');
-var cheerio = require('cheerio');
-var webpack = require('webpack');
-var HtmlWebpackPlugin = require('html-webpack-plugin');
-var HtmlWebpackDeployAssetsPlugin = require('../src');
+const path = require('path');
+const fs = require('fs');
+const rimraf = require('rimraf');
+const expect = require('expect');
+const dirCompare = require('dir-compare');
+const cheerio = require('cheerio');
 
-var OUTPUT_DIR = path.join(__dirname, '../dist');
+const webpack = require('webpack');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+const HtmlWebpackDeployAssetsPlugin = require('../src');
+
+const OUTPUT_DIR = path.join(__dirname, '../dist');
 
 function directoriesAreEqual(dirA, dirB) {
-  var res = dirCompare.compareSync(path.resolve(__dirname, dirA), path.resolve(__dirname, dirB), { compareSize: true });
-  return res.same;
+  const { same } = dirCompare.compareSync(path.resolve(__dirname, dirA), path.resolve(__dirname, dirB), { compareSize: true });
+  return same;
+}
+
+function createWebpackConfig (options = {}) {
+  
 }
 
 describe('html-webpack-deploy-assets-plugin', function() {
