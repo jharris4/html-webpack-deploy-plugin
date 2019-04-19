@@ -19,6 +19,9 @@
     "url": "https://github.com/jharris4/html-webpack-deploy-assets-plugin/issues"
   },
   "homepage": "https://github.com/jharris4/html-webpack-deploy-assets-plugin#readme",
+  "engines": {
+		"node": ">=8"
+	},
   "main": "src/index.js",
   "files": [
     "src/index.js"
