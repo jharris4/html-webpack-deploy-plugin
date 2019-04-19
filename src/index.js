@@ -1,8 +1,7 @@
-const webpack = require("webpack");
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const HtmlWebpackIncludeAssetsPlugin = require('html-webpack-include-assets-plugin');
-const fs = require("fs");
-const path = require("path");
+const fs = require('fs');
+const path = require('path');
 
 const PATH_REGEXP_NAME = /\[name\]/gi;
 const PATH_REGEXP_VERSION = /\[version\]/gi;
@@ -83,9 +82,8 @@ function setPluginOptions (pluginOptions) {
     let packageFilePath = path.join(process.cwd(), packagePath, packageName, 'package.json');
     try {
       let packageNpmPackage = JSON.parse(fs.readFileSync(packageFilePath, 'utf8'));
-      packageVersion = packageNpmPackage ? packageNpmPackage.version : "no_version";
-    }
-    catch (error) {
+      packageVersion = packageNpmPackage ? packageNpmPackage.version : 'no_version';
+    } catch (error) {
       throw new Error('Could not find package.json while trying to deploy assets for package named: ' + packageName + ' - ' + packageFilePath);
     }
 
@@ -93,8 +91,7 @@ function setPluginOptions (pluginOptions) {
       packageConfig.cdnEntries.forEach(function (cdnEntry) {
         includeList.push(cdnResolver({ name: packageName, version: packageVersion, path: cdnEntry }));
       });
-    }
-    else {
+    } else {
       let packageOutputPath = packageConfig.outputPath ? packageConfig.outputPath : outputPath;
       packageOutputPath = packageOutputPath.replace(PATH_REGEXP_NAME, packageName);
       packageOutputPath = packageOutputPath.replace(PATH_REGEXP_VERSION, packageVersion);
@@ -113,16 +110,14 @@ function setPluginOptions (pluginOptions) {
         });
       });
     }
-    if (packageConfig.cdnAsset && cdnResolver) {
-      includeList.push(cdnResolver({ name: packageName, version: packageVersion, path: cdnAsset }));
-    }
-    else {
-      let packageAsset = packageConfig.asset || "";
-      if (packageAsset) {
+    // if (packageConfig.cdnAsset && cdnResolver) {
+    //   includeList.push(cdnResolver({ name: packageName, version: packageVersion, path: cdnAsset }));
+    // } else {
+    //   let packageAsset = packageConfig.asset || '';
+    //   if (packageAsset) {
 
-      }
-    }
-
+    //   }
+    // }
   });
 
   return {
@@ -136,11 +131,11 @@ function setPluginOptions (pluginOptions) {
 
 class HtmlWebpackDeployAssetsPlugin {
   constructor (pluginOptions = {}) {
-    Object.assign(this, setPluginOptions(pluginOptions))
+    Object.assign(this, setPluginOptions(pluginOptions));
   }
 
-  apply(compiler) {
-    const externals = compiler.options.externals || {};
+  apply (compiler) {
+    // const externals = compiler.options.externals || {};
     new CopyWebpackPlugin(this.copyList).apply(compiler);
     new HtmlWebpackIncludeAssetsPlugin({ assets: this.includeList, links: this.links, append: this.append, publicPath: this.publicPath }).apply(compiler);
   }
