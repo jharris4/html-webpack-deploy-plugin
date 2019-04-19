@@ -3,15 +3,16 @@ const CopyWebpackPlugin = require('copy-webpack-plugin');
 const HtmlWebpackIncludeAssetsPlugin = require('html-webpack-include-assets-plugin');
 const fs = require("fs");
 const path = require("path");
+
 const PATH_REGEXP_NAME = /\[name\]/gi;
 const PATH_REGEXP_VERSION = /\[version\]/gi;
 
 /*
 const sample = {
-  "assets": {
+  copy: {
     "src/assets": "assets"
   },
-  "links": [
+  links: [
     {
       path: "assets/apple-touch-icon.png",
       attributes: {
@@ -25,27 +26,30 @@ const sample = {
         type: "image/png",
         sizes: "32x32"
       }
-    },
-    {
-      path: "assets/safari-pinned-tab.svg",
-      attributes: {
-        rel: "mask-icon",
-        color: "#404040"
-      }
     }
   ],
-  "packages": {
+  packages: {
     "bootstrap": {
-      "assets": {
+      copy: {
         "dist/css": "css/",
         "dist/fonts": "fonts/"
       },
-      "entries": [
+      links: [
         "css/bootstrap.min.css",
         "css/bootstrap-theme.min.css"
       ]
+    },
+    "react": {
+      copy: {
+        "umd/react.production.min.js": "js/react.production.min.js"
+      },
+      script: {
+        path: 'js/react.production.min.js,
+        var: 'React'
+      }
     }
-  }
+  },
+  packagesPath: 'node_modules'
 };
  */
 
