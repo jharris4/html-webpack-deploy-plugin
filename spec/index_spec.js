@@ -30,7 +30,7 @@ const webpack = require('webpack');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
-const HtmlWebpackDeployAssetsPlugin = require('../src');
+const HtmlWebpackDeployPlugin = require('../src');
 
 const OUTPUT_DIR = path.join(__dirname, '../dist');
 const OUTPUT_FILENAME = '[name].js';
@@ -87,12 +87,12 @@ const createWebpackConfig = ({
     plugins: [
       new MiniCssExtractPlugin({ filename: '[name].css' }),
       new HtmlWebpackPlugin(htmlOptions),
-      new HtmlWebpackDeployAssetsPlugin(options)
+      new HtmlWebpackDeployPlugin(options)
     ]
   };
 };
 
-describe('html-webpack-deploy-assets-plugin', () => {
+describe('html-webpack-deploy-plugin', () => {
   beforeEach(done => {
     rimraf(OUTPUT_DIR, done);
   });
@@ -101,10 +101,10 @@ describe('html-webpack-deploy-assets-plugin', () => {
     webpack(createWebpackConfig(), (err, result) => {
       expect(err).toBeFalsy();
       expect(JSON.stringify(result.compilation.errors)).toBe('[]');
-      var htmlFile = path.resolve(__dirname, '../dist/index.html');
+      const htmlFile = path.resolve(__dirname, '../dist/index.html');
       fs.readFile(htmlFile, 'utf8', (er, data) => {
         expect(er).toBeFalsy();
-        var $ = cheerio.load(data);
+        const $ = cheerio.load(data);
         expect($('script').length).toBe(2);
         expect($('link').length).toBe(1);
         expect($('script[src="app.js"]')).toBeTag({ tagName: 'script', attributes: { 'src': 'app.js', 'type': 'text/javascript' } });
@@ -123,7 +123,7 @@ describe('html-webpack-deploy-assets-plugin', () => {
             assets: {
               'dist/css': 'css/'
             },
-            entries: [
+            links: [
               'css/bootstrap.min.css'
             ]
           }
@@ -132,11 +132,11 @@ describe('html-webpack-deploy-assets-plugin', () => {
     }), (err, result) => {
       expect(err).toBeFalsy();
       expect(JSON.stringify(result.compilation.errors)).toBe('[]');
-      var htmlFile = path.resolve(__dirname, '../dist/index.html');
+      const htmlFile = path.resolve(__dirname, '../dist/index.html');
       fs.readFile(htmlFile, 'utf8', (er, data) => {
         expect(areEqualDirectories('../node_modules/bootstrap/dist/css', '../dist/bootstrap-4.3.1/css')).toBe(true);
         expect(er).toBeFalsy();
-        var $ = cheerio.load(data);
+        const $ = cheerio.load(data);
         expect($('script').length).toBe(2);
         expect($('link').length).toBe(2);
         expect($('script[src="app.js"]')).toBeTag({ tagName: 'script', attributes: { 'src': 'app.js', 'type': 'text/javascript' } });
@@ -175,7 +175,7 @@ describe('html-webpack-deploy-assets-plugin', () => {
       },
       plugins: [
         new HtmlWebpackPlugin(),
-        new HtmlWebpackDeployAssetsPlugin({
+        new HtmlWebpackDeployPlugin({
           assets: {
           },
           links: [
@@ -191,10 +191,10 @@ describe('html-webpack-deploy-assets-plugin', () => {
     }, (err, result) => {
       expect(err).toBeFalsy();
       expect(JSON.stringify(result.compilation.errors)).toBe('[]');
-      var htmlFile = path.resolve(__dirname, '../dist/index.html');
+      const htmlFile = path.resolve(__dirname, '../dist/index.html');
       fs.readFile(htmlFile, 'utf8', (er, data) => {
         expect(er).toBeFalsy();
-        var $ = cheerio.load(data);
+        const $ = cheerio.load(data);
         expect($('script').length).toBe(1);
         expect($('link').length).toBe(1);
         expect($('link[href="/public-path/the-href"]')).toBeTag({ tagName: 'link', attributes: { href: '/public-path/the-href', rel: 'the-rel' } });

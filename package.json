@@ -1,10 +1,10 @@
 {
-  "name": "html-webpack-deploy-assets-plugin",
+  "name": "html-webpack-deploy-plugin",
   "version": "1.0.4",
   "description": "Add the ability to deploy assets from local files or node_modules packages",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/jharris4/html-webpack-deploy-assets-plugin.git"
+    "url": "git+https://github.com/jharris4/html-webpack-deploy-plugin.git"
   },
   "keywords": [
     "webpack",
@@ -16,9 +16,9 @@
   "author": "jharris4",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/jharris4/html-webpack-deploy-assets-plugin/issues"
+    "url": "https://github.com/jharris4/html-webpack-deploy-plugin/issues"
   },
-  "homepage": "https://github.com/jharris4/html-webpack-deploy-assets-plugin#readme",
+  "homepage": "https://github.com/jharris4/html-webpack-deploy-plugin#readme",
   "engines": {
 		"node": ">=8"
 	},
@@ -33,7 +33,7 @@
   "dependencies": {
     "copy-webpack-plugin": "^5.0.2",
     "find-up": "^3.0.0",
-    "html-webpack-include-assets-plugin": "^2.0.0"
+    "html-webpack-tags-plugin": "^2.0.3"
   },
   "devDependencies": {
     "bootstrap": "^4.3.1",

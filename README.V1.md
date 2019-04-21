@@ -6,7 +6,7 @@ functionality by allowing you to specify js or css assets from node_modules to b
 
 -----
 
-This is the **old version** of this plugin. Please update to the `2.x` [version](https://github.com/jharris4/html-webpack-deploy-assets-plugin/blob/master/README.md) if possible.
+This is the **old version** of this plugin. Please update to the `2.x` [version](https://github.com/jharris4/html-webpack-deploy-plugin/blob/master/README.md) if possible.
 
 -----
 
@@ -18,6 +18,8 @@ Install the plugin with npm:
 ```shell
 $ npm install --save-dev html-webpack-deploy-assets-plugin
 ```
+
+(Note that this plugin was **renamed** in version `2.x`)
 
 Options
 -------

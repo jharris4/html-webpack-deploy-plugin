@@ -2,19 +2,23 @@ Deploy Assets extension for the HTML Webpack Plugin
 ========================================
 
 Enhances [html-webpack-plugin](https://github.com/ampedandwired/html-webpack-plugin)
-functionality by allowing you to specify local files or node_modules packages that should be injected
+functionality by allowing you to specify local files or node_modules packages that should be injected as html tags
 into your html template.
+
 
 Installation
 ------------
+
+```shell
+$ npm install --save-dev html-webpack-deploy-plugin
+```
+
 - You must be running **Node 8.6** or higher for version `2.x` of this plugin.
 
-- For use with the `Node < 8.6` please use version `1.x` (old README [here](https://github.com/jharris4/html-webpack-deploy-assets-plugin/blob/master/README.V1.md))
+- This plugin was **renamed** from `html-webpack-deploy-assets-plugin` to `html-webpack-deploy-plugin` in version `2.x`.
 
-Install the plugin with npm:
-```shell
-$ npm install --save-dev html-webpack-deploy-assets-plugin
-```
+- For use with the `Node < 8.6` please use version `1.x` (old README [here](https://github.com/jharris4/html-webpack-deploy-plugin/blob/master/README.V1.md))
+
 
 Options
 -------

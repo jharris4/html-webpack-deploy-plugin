@@ -1,5 +1,5 @@
 const CopyWebpackPlugin = require('copy-webpack-plugin');
-const HtmlWebpackIncludeAssetsPlugin = require('html-webpack-include-assets-plugin');
+const HtmlWebpackTagsPlugin = require('html-webpack-tags-plugin');
 const fs = require('fs');
 const path = require('path');
 
@@ -96,9 +96,9 @@ function setPluginOptions (pluginOptions) {
       packageOutputPath = packageOutputPath.replace(PATH_REGEXP_NAME, packageName);
       packageOutputPath = packageOutputPath.replace(PATH_REGEXP_VERSION, packageVersion);
 
-      const entries = packageConfig.entries || [];
-      entries.forEach(entry => {
-        includeList.push(path.join(packageOutputPath, entry));
+      const links = packageConfig.links || []; // TODO handle string/object, array of string/object
+      links.forEach(link => {
+        includeList.push(path.join(packageOutputPath, link));
       });
 
       const packageAssets = packageConfig.assets || {};
@@ -129,7 +129,7 @@ function setPluginOptions (pluginOptions) {
   };
 }
 
-class HtmlWebpackDeployAssetsPlugin {
+class HtmlWebpackDeployPlugin {
   constructor (pluginOptions = {}) {
     Object.assign(this, setPluginOptions(pluginOptions));
   }
@@ -137,7 +137,7 @@ class HtmlWebpackDeployAssetsPlugin {
   apply (compiler) {
     // const externals = compiler.options.externals || {};
     new CopyWebpackPlugin(this.copyList).apply(compiler);
-    new HtmlWebpackIncludeAssetsPlugin({ assets: this.includeList, links: this.links, append: this.append, publicPath: this.publicPath }).apply(compiler);
+    new HtmlWebpackTagsPlugin({ tags: this.includeList, links: this.links, append: this.append, publicPath: this.publicPath }).apply(compiler);
   }
 }
-module.exports = HtmlWebpackDeployAssetsPlugin;
+module.exports = HtmlWebpackDeployPlugin;
