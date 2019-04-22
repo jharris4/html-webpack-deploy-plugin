@@ -34,6 +34,78 @@ describe('option validation', () => {
     done();
   });
 
+  describe('options.assets', () => {
+    let savedCwd = process.cwd();
+    beforeEach(done => {
+      process.chdir(path.join(savedCwd, 'spec', 'fixtures'));
+      done();
+    });
+
+    afterEach(done => {
+      process.chdir(savedCwd);
+      done();
+    });
+
+    it('should throw an error if the assets is not an object', done => {
+      const theFunction = () => {
+        return new HtmlWebpackDeployPlugin({ assets: '123' });
+      };
+      expect(theFunction).toThrowError(/(options\.assets should be an object)/);
+      done();
+    });
+
+    it('should throw an error if the assets is an empty object', done => {
+      const theFunction = () => {
+        return new HtmlWebpackDeployPlugin({ assets: {} });
+      };
+      expect(theFunction).toThrowError(/(ptions.assets should be an object with a copy, links, or scripts property)/);
+      done();
+    });
+
+    it('should not throw an error if there are assets with empty copy array', done => {
+      const theFunction = () => {
+        return new HtmlWebpackDeployPlugin({ assets: { copy: [] } });
+      };
+      expect(theFunction).not.toThrowError();
+      done();
+    });
+
+    it('should throw an error if there are assets with copy that is not an array or object', done => {
+      const theFunction = () => {
+        return new HtmlWebpackDeployPlugin({ assets: { copy: '123' } });
+      };
+      expect(theFunction).toThrowError(/(options.assets.copy should be an array or object)/);
+      done();
+    });
+
+    it('should throw an error if there are assets with copy that is an object with non string from', done => {
+      const theFunction = () => {
+        return new HtmlWebpackDeployPlugin({ assets: { copy: { from: 123, to: 'dest' } } });
+      };
+      expect(theFunction).toThrowError(/(options.assets.copy should be an object with string properties from & to)/);
+      done();
+    });
+
+    it('should throw an error if there are assets with copy that is an object with non string to', done => {
+      const theFunction = () => {
+        return new HtmlWebpackDeployPlugin({ assets: { copy: { from: 'src', to: 123 } } });
+      };
+      expect(theFunction).toThrowError(/(options.assets.copy should be an object with string properties from & to)/);
+      done();
+    });
+
+    it('should not throw an error for an assets with copy that is an object with string from & to', done => {
+      const theFunction = () => {
+        return new HtmlWebpackDeployPlugin({ assets: { copy: { from: 'src', to: 'dest' } } });
+      };
+      expect(theFunction).not.toThrowError();
+      done();
+    });
+
+    runTestsForOption(['assets', 'links']);
+    runTestsForOption(['assets', 'scripts']);
+  });
+
   describe('options.packages', () => {
     let savedCwd = process.cwd();
     beforeEach(done => {
@@ -141,6 +213,9 @@ describe('option validation', () => {
       expect(theFunction).toThrowError(/(options.packages.bad-package package.json was malformed)/);
       done();
     });
+
+    runTestsForOption(['packages', 'bootstrap', 'links']);
+    runTestsForOption(['packages', 'bootstrap', 'scripts']);
   });
 
   describe('options.append', () => {
@@ -161,13 +236,6 @@ describe('option validation', () => {
       expect(theFunction).toThrowError(/(options.append should be a boolean)/);
       done();
     });
-  });
-
-  describe('options[links|scripts]', () => {
-    runTestsForOption(['assets', 'links']);
-    runTestsForOption(['assets', 'scripts']);
-    runTestsForOption(['packages', 'bootstrap', 'links']);
-    runTestsForOption(['packages', 'bootstrap', 'scripts']);
   });
 });
 
