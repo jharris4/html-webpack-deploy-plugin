@@ -267,6 +267,97 @@ describe('option validation', () => {
       done();
     });
   });
+
+  describe('options.addAssetPath', () => {
+    it('should throw an error if the addAssetPath is not a function', done => {
+      const theFunction = () => {
+        return new HtmlWebpackDeployPlugin({ addAssetPath: 'hello' });
+      };
+
+      expect(theFunction).toThrowError(/(options.addAssetPath should be a function)/);
+      done();
+    });
+
+    it('should throw an error if the addAssetPath is not a function that returns a string', done => {
+      const theFunction = () => {
+        return new HtmlWebpackDeployPlugin({ addAssetPath: () => null });
+      };
+
+      expect(theFunction).toThrowError(/(options.addAssetPath should be a function that returns a string)/);
+      done();
+    });
+  });
+
+  describe('options.addPackagePath', () => {
+    it('should throw an error if the addPackagePath is not a function', done => {
+      const theFunction = () => {
+        return new HtmlWebpackDeployPlugin({ addPackagePath: 'hello' });
+      };
+
+      expect(theFunction).toThrowError(/(options.addPackagePath should be a function)/);
+      done();
+    });
+
+    it('should throw an error if the addPackagePath is not a function that returns a string', done => {
+      const theFunction = () => {
+        return new HtmlWebpackDeployPlugin({ addPackagePath: () => null });
+      };
+
+      expect(theFunction).toThrowError(/(options.addPackagePath should be a function that returns a string)/);
+      done();
+    });
+  });
+
+  describe('options.findPackagePath', () => {
+    it('should throw an error if the findPackagePath is not a function', done => {
+      const theFunction = () => {
+        return new HtmlWebpackDeployPlugin({ findPackagePath: 'hello' });
+      };
+
+      expect(theFunction).toThrowError(/(options.findPackagePath should be a function)/);
+      done();
+    });
+
+    it('should throw an error if the findPackagePath is not a function that returns a string', done => {
+      const theFunction = () => {
+        return new HtmlWebpackDeployPlugin({ findPackagePath: () => null });
+      };
+
+      expect(theFunction).toThrowError(/(options.findPackagePath should be a function that returns a string)/);
+      done();
+    });
+  });
+
+  describe('options.useCdn', () => {
+    it('should throw an error if the useCdn is not a boolean', done => {
+      const theFunction = () => {
+        return new HtmlWebpackDeployPlugin({ useCdn: 'hello' });
+      };
+
+      expect(theFunction).toThrowError(/(options.useCdn should be a boolean)/);
+      done();
+    });
+  });
+
+  describe('options.getCdnPath', () => {
+    it('should throw an error if the getCdnPath is not a function', done => {
+      const theFunction = () => {
+        return new HtmlWebpackDeployPlugin({ getCdnPath: 'hello' });
+      };
+
+      expect(theFunction).toThrowError(/(options.getCdnPath should be a function)/);
+      done();
+    });
+
+    it('should throw an error if the getCdnPath is not a function that returns a string', done => {
+      const theFunction = () => {
+        return new HtmlWebpackDeployPlugin({ getCdnPath: () => null });
+      };
+
+      expect(theFunction).toThrowError(/(options.getCdnPath should be a function that returns a string)/);
+      done();
+    });
+  });
 });
 
 function runTestsForOption (optionNamePath) {
