@@ -82,6 +82,7 @@ function getTagObjects (tags, optionName, packageName) {
 }
 
 function getDeployObject (deployObject, packageName) {
+  assert(isObject(deployObject), `${PLUGIN_NAME} options.${packageName} should be an object`);
   let copyList = [];
   let linksList = [];
   let scriptsList = [];
