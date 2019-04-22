@@ -20,87 +20,131 @@ $ npm install --save-dev html-webpack-deploy-plugin
 - For use with the `Node < 8.6` please use version `1.x` (old README [here](https://github.com/jharris4/html-webpack-deploy-plugin/blob/master/README.V1.md))
 
 
-Options
+Configuration
 -------
+
+### Default Options
+
+This plugin will run and do nothing if no options are provided.
+
+The default options for this plugin are shown below:
+
+```js
+const path = require('path');
+
+const DEFAULT_OPTIONS = {
+  append: false,
+  assets: {},
+  packages: {},
+  addAssetPath: assetPath => path.join('assets', assetPath),
+  addPackagePath: (packageName, packageVersion, packagePath) => path.join('packages', packageName + '-' + packageVersion, packagePath),
+  findPackagePath: (cwd, packageName) => findUp.sync(slash(path.join('node_modules', packageName)), { cwd }),
+  useCdn: false,
+  getCdnPath: (packageName, packageVersion, packagePath) => `https://unpkg.com/${packageName}@${packageVersion}/${packagePath}`
+};
+```
+
+---
+### Options
+
+All options for this plugin are validated as soon as the plugin is instantiated.
+
 The available options are:
 
-- `packagePath`: `string`
+|Name|Type|Default|Description|
+|:--:|:--:|:-----:|:----------|
+|**`append`**|`{Boolean}`|`false`|Whether to prepend or append the injected tags relative to any existing tags (should be set to **false** when using any `script` tag asset **`external`**) |
+|**`assets`**|`{Object}`|`undefined`|The local assets to copy into the webpack output directory and inject into the template html file|
+|**`packages`**|`{Object}`|`undefined`|The `node_modules` packages to copy into the webpack output directory and inject into the template html file|
+|**`addAssetPath`**|`{Function}`|`see above`|The function to call to get the output path for `assets` when copying and injecting them|
+|**`addPackagePath`**|`{Function}`|`see above`|The function to call to get the output path for `packages` when copying and injecting them|
+|**`useCdn`**|`{Boolean}`|`false`|Whether or not to use the **`getCdnPath`** to replace the asset paths with their `cdn urls`|
+|**`getCdnPath`**|`{Function}`|`see above`|The function to use when replacing asset paths with `cdn urls`|
 
-  The path to installed packages, relative to the current directory. Default is `node_modules`.
+---
 
-- `append`: `boolean`
+The **`assets`** option can be used to specify local assets that should be copied to the webpack output directory and injected into the `index.html` as tags.
 
-  Specifies whether the assets will be appended (`true`) or prepended (`false`) to the list of assets in the html file. Default is `false`.
+This option requires an object with any of the `copy`, `links`, or `scripts` properties.
 
-- `publicPath`: `boolean` or `string`
+The settings for these are based on the [copy-webpack-plugin](https://github.com/webpack-contrib/copy-webpack-plugin) and the [html-webpack-tags-plugin](https://github.com/jharris4/html-webpack-tags-plugin)
 
-  Specifying whether the assets should be prepended with webpack's public path or a custom publicPath (`string`).
+For example, to copy some assets to webpack, and insert a `\<link\>` and `\<script\>` tag:
 
-  A value of `false` may be used to disable prefixing with webpack's publicPath, or a value like `myPublicPath/` may be used to prefix all assets with the given string. Default is `true`.
-
-- `outputPath`: `string`
-
-  A directory name that will be created for each of the deployed assets.
-
-    Instances of `[name]` will be replaced with the package name.
-    Instances of `[version]` will be replaced with the package version.
-
-  Default is `[name]-[version]`.
-
-- `packages`: `object`
-
-  Specifies the definition of the assets from installed packages to be deployed. Defaults is `{}`.
-
-  The keys/properties of the packages option must be the name of an installed package, and the definition must be
-  an object with the following properties:
-
-    - 'outputPath': `string`
-
-    Allows the global `outputPath` to be overriden on a per-package basis. Default is the global value.
-
-    - `assets`: `object`
-
-    Specifies files or directories to be copied from the package's directory.
-
-    The keys/properies are the asset to be copied, and the values are the target asset location within webpack's output directory.
-
-    These are used as the from & to properties for the internal usage of the [copy-webpack-plugin](https://github.com/kevlened/copy-webpack-plugin)
-
-    - `entries`: `array`
-
-    Specifies files to be included in the html file.
-
-    The file paths should be relative to webpack's output directory.
-
-- `assets`: `object`
-
-  Specifies the definition of the local assets to be deployed. Defaults is `{}`.
-
-  The keys/properies are the asset to be copied, and the values are the target asset location within webpack's output directory.
-
-- `links`: `array`
-
-  Specifies the definition of the links to be deployed. Defaults is `[]`.
-
-  The objects in the links are of the shape:
-
-  ```javascript
-  {
-    href: "path/to/asset", // required - must be a string
-    rel: "icon",           // required - must be a string
-    sizes: '16x16',            // example of optional extra attribute
-    anyOtherAttribute: 'value'
+```js
+const pluginOptions = {
+  assets: {
+    copy: [
+      { from: 'src-path/assets', to: 'dst-path/assets' },
+      { from: 'src-path/js', to: 'dst-path/js' }
+      { from: 'src-path/css/src-file.png', to: 'dst-path/dst-file.png' }
+    ],
+    links: [
+      { path: 'dst-path/dst-file.png', attributes: { rel: 'icon' }
+    ],
+    scripts: [
+      { path: 'dst-path/js/script.js', }
+    ]
   }
-  ```
+};
+```
 
-  For which the following would be injected into the html header:
+The above example will generate something like the following html:
 
-  ```html
-  <head>
-    <link href="${webpack.publicPath}/path/to/asset" rel="icon" sizes="16x16" anyOtherAttribute="value"/>
-  </head>
-  ```
+```html
+<head>
+  <link href="${webpack.publicPath}dst-path/dst-file.png" rel="icon">
+</head>
+<body>
+  <script src="${webpack.publicPath}dst-path/js/script.js"></script>
+</body>
+```
 
+---
+
+The **`packages`** option can be used to specify package assets that should be copied to the webpack output directory and injected into the `index.html` as tags.
+
+This option requires an object with any of the `copy`, `links`, or `scripts` properties.
+
+The settings for these are based on the [copy-webpack-plugin](https://github.com/webpack-contrib/copy-webpack-plugin) and the [html-webpack-tags-plugin](https://github.com/jharris4/html-webpack-tags-plugin)
+
+For example, to copy some assets from `bootstrap` to webpack, and insert a `\<link\>` and `\<script\>` tag for bootstrap:
+
+```js
+const pluginOptions = {
+  packages: {
+    'bootstrap': {
+      copy: [
+        { from: 'dist/css', to: 'css/' },
+        { from: 'dist/js', to: 'js/' }
+      ],
+      links: [
+        'css/bootstrap.min.css'
+      ],
+      scripts: {
+        variableName: 'Bootstrap',
+        path: 'js/bootstrap.bundle.min.js'
+      }
+    }
+  }
+};
+```
+
+The **`variableName`** can be used to tell `webpack` to stop bundling a package, and instead load it from the injected `\<script\>`.
+
+The above example will generate something like the following html:
+
+```html
+<head>
+  <link href="${webpack.publicPath}css/bootstrap.min.css">
+</head>
+<body>
+  <script src="${webpack.publicPath}js/bootstrap.bundle.min.js"></script>
+</body>
+```
+
+
+---
 
 Examples
 -------
@@ -110,27 +154,27 @@ Deploying bootstrap css and fonts and an assets directory from local files:
 plugins: [
   new HtmlWebpackPlugin(),
   new HtmlWebpackDeployAssetsPlugin({
-    "packages": {
+    packages: {
       "bootstrap": {
-        "assets": {
-          "dist/css": "css/",
-          "dist/fonts": "fonts/"
-        },
-        "entries": [
+        copy: [
+          { from: "dist/css", to: "css/" },
+          { from: "dist/fonts", to: "fonts/" }
+        ],
+        links: [
           "css/bootstrap.min.css",
           "css/bootstrap-theme.min.css"
         ]
       }
     },
-    "assets": {
-      "src/assets": "assets/"
-    }
-    "link": [
-      {
+    assets: {
+      copy: [
+        { from: "src/assets", to: "assets/" }
+      ],
+      links: {
         "href": "/assets/icon.png",
         "rel": "icon"
       }
-    ]
+    }
   })
 ]
 ```
