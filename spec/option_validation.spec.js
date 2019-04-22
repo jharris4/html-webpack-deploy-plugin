@@ -35,6 +35,17 @@ describe('option validation', () => {
   });
 
   describe('options.packages', () => {
+    let savedCwd = process.cwd();
+    beforeEach(done => {
+      process.chdir(path.join(savedCwd, 'spec', 'fixtures'));
+      done();
+    });
+
+    afterEach(done => {
+      process.chdir(savedCwd);
+      done();
+    });
+
     it('should throw an error if the packages is not an object', done => {
       const theFunction = () => {
         return new HtmlWebpackDeployPlugin({ packages: '123' });
@@ -56,6 +67,78 @@ describe('option validation', () => {
         return new HtmlWebpackDeployPlugin({ packages: {} });
       };
       expect(theFunction).not.toThrowError();
+      done();
+    });
+
+    it('should throw an error if there is an empty object package', done => {
+      const theFunction = () => {
+        return new HtmlWebpackDeployPlugin({ packages: { 'the-package': {} } });
+      };
+      expect(theFunction).toThrowError(/(options.packages.the-package should be an object with a copy, links, or scripts property)/);
+      done();
+    });
+
+    it('should not throw an error if there is an object package with empty copy array', done => {
+      const theFunction = () => {
+        return new HtmlWebpackDeployPlugin({ packages: { 'the-package': { copy: [] } } });
+      };
+      expect(theFunction).not.toThrowError();
+      done();
+    });
+
+    it('should throw an error if there is a package with copy that is not an array or object', done => {
+      const theFunction = () => {
+        return new HtmlWebpackDeployPlugin({ packages: { 'the-package': { copy: '123' } } });
+      };
+      expect(theFunction).toThrowError(/(options.packages.the-package.copy should be an array or object)/);
+      done();
+    });
+
+    it('should throw an error if there is a package with copy that is an object with non string from', done => {
+      const theFunction = () => {
+        return new HtmlWebpackDeployPlugin({ packages: { 'the-package': { copy: { from: 123, to: 'dest' } } } });
+      };
+      expect(theFunction).toThrowError(/(options.packages.the-package.copy should be an object with string properties from & to)/);
+      done();
+    });
+
+    it('should throw an error if there is a package with copy that is an object with non string to', done => {
+      const theFunction = () => {
+        return new HtmlWebpackDeployPlugin({ packages: { 'the-package': { copy: { from: 'src', to: 123 } } } });
+      };
+      expect(theFunction).toThrowError(/(options.packages.the-package.copy should be an object with string properties from & to)/);
+      done();
+    });
+
+    it('should not throw an error for a package that exists with copy that is an object with string from & to', done => {
+      const theFunction = () => {
+        return new HtmlWebpackDeployPlugin({ packages: { 'the-package': { copy: { from: 'src', to: 'dest' } } } });
+      };
+      expect(theFunction).not.toThrowError();
+      done();
+    });
+
+    it('should throw an error for a package that does not exist', done => {
+      const theFunction = () => {
+        return new HtmlWebpackDeployPlugin({ packages: { 'package-does-not-exist': { copy: { from: 'src', to: 'dest' } } } });
+      };
+      expect(theFunction).toThrowError(/(options.packages.package-does-not-exist package path could not be found)/);
+      done();
+    });
+
+    it('should throw an error for a package that does not have a version', done => {
+      const theFunction = () => {
+        return new HtmlWebpackDeployPlugin({ packages: { 'no-version': { copy: { from: 'src', to: 'dest' } } } });
+      };
+      expect(theFunction).toThrowError(/(options.packages.no-version package version could not be found)/);
+      done();
+    });
+
+    it('should throw an error for a package that has a malformed package.json', done => {
+      const theFunction = () => {
+        return new HtmlWebpackDeployPlugin({ packages: { 'bad-package': { copy: { from: 'src', to: 'dest' } } } });
+      };
+      expect(theFunction).toThrowError(/(options.packages.bad-package package.json was malformed)/);
       done();
     });
   });
