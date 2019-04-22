@@ -94,7 +94,7 @@ const createWebpackConfig = ({
   };
 };
 
-describe('html-webpack-deploy-plugin', () => {
+describe('end to end', () => {
   beforeEach(done => {
     rimraf(OUTPUT_DIR, done);
   });
