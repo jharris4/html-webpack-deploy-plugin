@@ -33,7 +33,7 @@
   "dependencies": {
     "copy-webpack-plugin": "^5.0.2",
     "find-up": "^3.0.0",
-    "html-webpack-tags-plugin": "^2.0.3"
+    "html-webpack-tags-plugin": "^2.0.4"
   },
   "devDependencies": {
     "bootstrap": "^4.3.1",
