@@ -43,7 +43,15 @@ describe('option validation', () => {
       done();
     });
 
-    it('should not throw an error if the packages in an empty object', done => {
+    it('should throw an error if any of the packages is not an object', done => {
+      const theFunction = () => {
+        return new HtmlWebpackDeployPlugin({ packages: { 'the-package': 'abc' } });
+      };
+      expect(theFunction).toThrowError(/(options\.packages.the-package should be an object)/);
+      done();
+    });
+
+    it('should not throw an error if the packages is an empty object', done => {
       const theFunction = () => {
         return new HtmlWebpackDeployPlugin({ packages: {} });
       };
