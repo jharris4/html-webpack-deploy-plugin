@@ -189,7 +189,7 @@ describe('end to end', () => {
       });
     });
 
-    it('injects cdn urls', done => {
+    it('injects cdn urls when useCdn is true', done => {
       webpack(createWebpackConfig({
         options: {
           packages: {
@@ -225,6 +225,48 @@ describe('end to end', () => {
           expect($('link[href="style.css"]')).toBeTag({ tagName: 'link', attributes: { 'href': 'style.css', 'rel': 'stylesheet' } });
           expect($('link[href="https://unpkg.com/bootstrap@4.3.1/css/bootstrap.min.css"]')).toBeTag({ tagName: 'link', attributes: { 'href': 'https://unpkg.com/bootstrap@4.3.1/css/bootstrap.min.css', 'rel': 'stylesheet' } });
           expect($('script[src="https://unpkg.com/bootstrap@4.3.1/js/bootstrap.bundle.min.js"]')).toBeTag({ tagName: 'script', attributes: { 'src': 'https://unpkg.com/bootstrap@4.3.1/js/bootstrap.bundle.min.js' } });
+          done();
+        });
+      });
+    });
+
+    it('injects cdn urls with a custom getCdnPath', done => {
+      webpack(createWebpackConfig({
+        options: {
+          packages: {
+            'bootstrap': {
+              copy: [
+                { from: 'dist/css', to: 'css/' },
+                { from: 'dist/js', to: 'js/' }
+              ],
+              links: [
+                'css/bootstrap.min.css'
+              ],
+              scripts: {
+                // variableName: 'Bootstrap',
+                path: 'js/bootstrap.bundle.min.js'
+              }
+            }
+          },
+          useCdn: true,
+          getCdnPath: (packageName, packageVersion, packagePath) => `https://mydomain.com/${packageName}@${packageVersion}/${packagePath}`
+        }
+      }), (err, result) => {
+        expect(err).toBeFalsy();
+        expect(JSON.stringify(result.compilation.errors)).toBe('[]');
+        // expect(JSON.stringify(result.compilation.options.externals)).toBe('{"bootstrap":"Bootstrap"}');
+        fs.readFile(OUPUT_HTML_FILE, 'utf8', (er, data) => {
+          expect(areEqualDirectories('../node_modules/bootstrap/dist/css', `${OUTPUT_DIR}/packages/bootstrap-4.3.1/css`)).toBe(true);
+          expect(areEqualDirectories('../node_modules/bootstrap/dist/js', `${OUTPUT_DIR}/packages/bootstrap-4.3.1/js`)).toBe(true);
+          expect(er).toBeFalsy();
+          const $ = cheerio.load(data);
+          expect($('script').length).toBe(3);
+          expect($('link').length).toBe(2);
+          expect($('script[src="app.js"]')).toBeTag({ tagName: 'script', attributes: { 'src': 'app.js', 'type': 'text/javascript' } });
+          expect($('script[src="style.js"]')).toBeTag({ tagName: 'script', attributes: { 'src': 'style.js', 'type': 'text/javascript' } });
+          expect($('link[href="style.css"]')).toBeTag({ tagName: 'link', attributes: { 'href': 'style.css', 'rel': 'stylesheet' } });
+          expect($('link[href="https://mydomain.com/bootstrap@4.3.1/css/bootstrap.min.css"]')).toBeTag({ tagName: 'link', attributes: { 'href': 'https://mydomain.com/bootstrap@4.3.1/css/bootstrap.min.css', 'rel': 'stylesheet' } });
+          expect($('script[src="https://mydomain.com/bootstrap@4.3.1/js/bootstrap.bundle.min.js"]')).toBeTag({ tagName: 'script', attributes: { 'src': 'https://mydomain.com/bootstrap@4.3.1/js/bootstrap.bundle.min.js' } });
           done();
         });
       });
