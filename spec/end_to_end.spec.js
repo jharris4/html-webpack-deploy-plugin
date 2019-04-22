@@ -304,6 +304,38 @@ describe('end to end', () => {
         });
       });
     });
+
+    it('uses a custom findPackagePath option', done => {
+      webpack(createWebpackConfig({
+        options: {
+          packages: {
+            'bootstrap': {
+              copy: [{
+                from: 'dist/css', to: 'css/'
+              }],
+              links: [
+                'css/bootstrap.min.css'
+              ]
+            }
+          },
+          findPackagePath: (cwd, packageName) => path.join(FIXTURES_PATH, 'node_modules', packageName)
+        }
+      }), (err, result) => {
+        expect(err).toBeFalsy();
+        expect(JSON.stringify(result.compilation.errors)).toBe('[]');
+        fs.readFile(OUPUT_HTML_FILE, 'utf8', (er, data) => {
+          expect(er).toBeFalsy();
+          const $ = cheerio.load(data);
+          expect($('script').length).toBe(2);
+          expect($('link').length).toBe(2);
+          expect($('script[src="app.js"]')).toBeTag({ tagName: 'script', attributes: { 'src': 'app.js', 'type': 'text/javascript' } });
+          expect($('script[src="style.js"]')).toBeTag({ tagName: 'script', attributes: { 'src': 'style.js', 'type': 'text/javascript' } });
+          expect($('link[href="style.css"]')).toBeTag({ tagName: 'link', attributes: { 'href': 'style.css', 'rel': 'stylesheet' } });
+          expect($('link[href="packages/bootstrap-fake-version/css/bootstrap.min.css"]')).toBeTag({ tagName: 'link', attributes: { 'href': 'packages/bootstrap-fake-version/css/bootstrap.min.css', 'rel': 'stylesheet' } });
+          done();
+        });
+      });
+    });
   });
 
   describe('assets', () => {
