@@ -175,19 +175,21 @@ function HtmlWebpackDeployPlugin (options) {
       assert(isObject(optionPackages), `${PLUGIN_NAME} options.packages should be an object`);
       packages = {};
       Object.keys(optionPackages).forEach(packageName => {
-        // TODO - if the external.packageName is missing this will throw. so we cannot call the option external like: { external: 'the-variable-name' }
         const packageAssets = getDeployObject(optionPackages[packageName], 'packages.' + packageName);
         packages[packageName] = packageAssets;
 
         const packagePath = findPackagePath(process.cwd(), packageName);
+        assert(isString(packagePath), `${PLUGIN_NAME} options.packages.${packageName} package path could not be found`);
         const packageFilePath = path.join(packagePath, 'package.json');
-        let packageVersion = 'no_version';
+        let packageNpmPackage;
         try {
-          let packageNpmPackage = JSON.parse(fs.readFileSync(packageFilePath, 'utf8'));
-          packageVersion = packageNpmPackage ? packageNpmPackage.version : 'no_version';
+          packageNpmPackage = JSON.parse(fs.readFileSync(packageFilePath, 'utf8'));
         } catch (error) {
           assert(false, `${PLUGIN_NAME} options.packages.${packageName} package.json not found in ${packageFilePath}`);
         }
+        assert(isObject(packageNpmPackage), `${PLUGIN_NAME} options.packages.${packageName} package.json was malformed: ${packageFilePath}/package.json`);
+        const packageVersion = packageNpmPackage.version;
+        assert(isString(packageNpmPackage.version), `${PLUGIN_NAME} options.packages.${packageName} package version could not be found`);
 
         // always copy even when using cdn
         packageAssets.copy = packageAssets.copy.map(copy => ({
