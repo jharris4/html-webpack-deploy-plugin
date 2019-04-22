@@ -54,19 +54,24 @@ function applyConstructor (Constructor, ...args) {
   return new Constructor(...args);
 }
 
-function checkForTagOptionErrors (tagOptions, optionName) {
+function checkForTagOptionErrors (tagOptions, optionName, packageName) {
+  const errorName = packageName ? packageName + '.' + optionName : optionName;
   try {
     applyConstructor(HtmlWebpackTagsPlugin, { [optionName]: tagOptions });
     // new HtmlWebpackTagsPlugin({ [optionName]: tagOptions });
   } catch (err) {
-    // TODO - reformat error message
-    throw err;
+    if (err.message.indexOf('HtmlWebpackTagsPlugin') !== -1) {
+      const msg = err.message.replace(`HtmlWebpackTagsPlugin options.${optionName}`, '');
+      throw new Error(`${PLUGIN_NAME} options.${errorName}${msg}`);
+    } else {
+      throw err;
+    }
   }
 }
 
 function getTagObjects (tags, optionName, packageName) {
-  assert(isArray(tags) || isObject(tags), `${PLUGIN_NAME} options.${packageName}.${optionName} should be an array or object`);
-  checkForTagOptionErrors(tags, optionName);
+  assert(isString(tags) || isArray(tags) || isObject(tags), `${PLUGIN_NAME} options.${packageName}.${optionName} should be a string, object, or array`);
+  checkForTagOptionErrors(tags, optionName, packageName);
   if (isString(tags)) {
     return [{ path: tags }];
   } else if (isObject(tags)) {
