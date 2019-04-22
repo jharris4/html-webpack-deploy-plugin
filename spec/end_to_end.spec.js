@@ -353,5 +353,38 @@ describe('end to end', () => {
         });
       });
     });
+
+    it('it uses a custom addAssetPath option ', done => {
+      webpack(createWebpackConfig({
+        webpackPublicPath: '/public-path/',
+        options: {
+          assets: {
+            links: [
+              {
+                path: 'the-href',
+                attributes: {
+                  'rel': 'the-rel'
+                }
+              }
+            ]
+          },
+          addAssetPath: assetPath => path.join('my-assets', assetPath)
+        }
+      }), (err, result) => {
+        expect(err).toBeFalsy();
+        expect(JSON.stringify(result.compilation.errors)).toBe('[]');
+        fs.readFile(OUPUT_HTML_FILE, 'utf8', (er, data) => {
+          expect(er).toBeFalsy();
+          const $ = cheerio.load(data);
+          expect($('script').length).toBe(2);
+          expect($('link').length).toBe(2);
+          expect($('script[src="/public-path/app.js"]')).toBeTag({ tagName: 'script', attributes: { 'src': '/public-path/app.js', 'type': 'text/javascript' } });
+          expect($('script[src="/public-path/style.js"]')).toBeTag({ tagName: 'script', attributes: { 'src': '/public-path/style.js', 'type': 'text/javascript' } });
+          expect($('link[href="/public-path/style.css"]')).toBeTag({ tagName: 'link', attributes: { 'href': '/public-path/style.css', 'rel': 'stylesheet' } });
+          expect($('link[href="/public-path/my-assets/the-href"]')).toBeTag({ tagName: 'link', attributes: { href: '/public-path/my-assets/the-href', rel: 'the-rel' } });
+          done();
+        });
+      });
+    });
   });
 });
