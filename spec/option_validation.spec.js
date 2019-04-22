@@ -216,6 +216,36 @@ describe('option validation', () => {
 
     runTestsForOption(['packages', 'bootstrap', 'links']);
     runTestsForOption(['packages', 'bootstrap', 'scripts']);
+
+    it('should throw an error for a package with scripts that are objects with string variableName and object external', done => {
+      const theFunction = () => {
+        return new HtmlWebpackDeployPlugin({ packages: { 'the-package': { scripts: {
+          path: 'a-path',
+          variableName: 'shortcutVariableName',
+          external: {
+            packageName: 'packageName',
+            variableName: 'variableName'
+          } } } } });
+      };
+      expect(theFunction).toThrowError(/(options.packages.the-package.scripts object variableName and external cannot be used together)/);
+      done();
+    });
+
+    it('should throw an error for a package with scripts that are objects with non string variableName', done => {
+      const theFunction = () => {
+        return new HtmlWebpackDeployPlugin({ packages: { 'the-package': { scripts: { path: 'a-path', variableName: 123 } } } });
+      };
+      expect(theFunction).toThrowError(/(options.packages.the-package.scripts object variableName should be a string)/);
+      done();
+    });
+
+    it('should not throw an error for a package with scripts that are objects with string variableName', done => {
+      const theFunction = () => {
+        return new HtmlWebpackDeployPlugin({ packages: { 'the-package': { scripts: { path: 'a-path', variableName: 'the-variable-name' } } } });
+      };
+      expect(theFunction).not.toThrowError();
+      done();
+    });
   });
 
   describe('options.append', () => {
