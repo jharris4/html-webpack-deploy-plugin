@@ -309,7 +309,7 @@ describe('end to end', () => {
       });
     });
 
-    fit('injects cdn urls when useCdn is true or false at the package or tag level', done => {
+    it('injects cdn urls when useCdn is true or false at the package or tag level', done => {
       webpack(createWebpackConfig({
         options: {
           packages: {
