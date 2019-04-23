@@ -577,6 +577,26 @@ function runTestsForOption (optionNamePath) {
     });
   });
 
+  describe(`options.${optionName} append`, () => {
+    it(`should throw an error if the ${optionName} contains an element that is an object with a non boolean append`, done => {
+      const theFunction = () => {
+        return createPlugin([{ path: 'a' }, { path: 'b', append: 123 }, { path: 'c' }]);
+      };
+
+      expect(theFunction).toThrowError(new RegExp(`(options.${optionName} object append should be a boolean)`));
+      done();
+    });
+
+    it(`should not throw an error if the ${optionName} contains elements that are all objects that have a boolean append`, done => {
+      const theFunction = () => {
+        return createPlugin([{ path: 'a', append: true }, { path: 'b', append: false }, { path: 'c', append: true }]);
+      };
+
+      expect(theFunction).not.toThrowError();
+      done();
+    });
+  });
+
   describe(`options.${optionName} publicPath`, () => {
     it(`should throw an error if the ${optionName} contains an element that is an object with publicPath set to string`, done => {
       const theFunction = () => {
