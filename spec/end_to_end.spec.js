@@ -522,6 +522,46 @@ describe('end to end', () => {
         });
       });
     });
+
+    it('does not apply devPath for a tag when useCdn for the tag is true', done => {
+      webpack(createWebpackConfig({
+        webpackMode: 'development',
+        options: {
+          packages: {
+            'bootstrap': {
+              copy: [{
+                from: 'dist/css', to: 'css/'
+              }],
+              links: {
+                path: 'css/bootstrap.min.css',
+                devPath: 'css/bootstrap.css'
+              },
+              scripts: {
+                path: 'js/bootstrap.min.js',
+                devPath: 'js/bootstrap.js'
+              },
+              useCdn: true,
+              getCdnPath: (packageName, packageVersion, packagePath) => `http://mydomain.com/${packageName}@${packageVersion}/${packagePath}`
+            }
+          }
+        }
+      }), (err, result) => {
+        expect(err).toBeFalsy();
+        expect(JSON.stringify(result.compilation.errors)).toBe('[]');
+        fs.readFile(OUPUT_HTML_FILE, 'utf8', (er, data) => {
+          expect(er).toBeFalsy();
+          const $ = cheerio.load(data);
+          expect($('script').length).toBe(3);
+          expect($('link').length).toBe(2);
+          expect($('script[src="app.js"]')).toBeTag({ tagName: 'script', attributes: { 'src': 'app.js', 'type': 'text/javascript' } });
+          expect($('script[src="style.js"]')).toBeTag({ tagName: 'script', attributes: { 'src': 'style.js', 'type': 'text/javascript' } });
+          expect($('link[href="style.css"]')).toBeTag({ tagName: 'link', attributes: { 'href': 'style.css', 'rel': 'stylesheet' } });
+          expect($('link[href="http://mydomain.com/bootstrap@4.3.1/css/bootstrap.min.css"]')).toBeTag({ tagName: 'link', attributes: { 'href': 'http://mydomain.com/bootstrap@4.3.1/css/bootstrap.min.css', 'rel': 'stylesheet' } });
+          expect($('script[src="http://mydomain.com/bootstrap@4.3.1/js/bootstrap.min.js"]')).toBeTag({ tagName: 'script', attributes: { 'src': 'http://mydomain.com/bootstrap@4.3.1/js/bootstrap.min.js', 'type': 'text/javascript' } });
+          done();
+        });
+      });
+    });
   });
 
   describe('assets', () => {

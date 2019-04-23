@@ -244,23 +244,28 @@ function HtmlWebpackDeployPlugin (options) {
           if (isDefined(tag.devPath)) {
             assert(isString(tag.devPath), `${PLUGIN_NAME} options.packages.${packageName}.${optionName} object devPath should be a string`);
           }
+          let newTag = {
+            ...tag,
+            packageName,
+            packageDefinition
+          };
           if (localUseCdn) {
-            tag = {
-              ...tag,
+            newTag = {
+              ...newTag,
               path: localGetCdnPath(packageName, packageVersion, localCdnPath),
               publicPath: false,
               hash: false
             };
           } else {
-            tag = {
-              ...tag,
+            newTag = {
+              ...newTag,
               path: addPackagePath(packageName, packageVersion, tag.path)
             };
             if (isDefined(tag.devPath)) {
               tag.devPath = addPackagePath(packageName, packageVersion, tag.devPath);
             }
           }
-          return tag;
+          return newTag;
         };
 
         packageAssets.links = packageAssets.links.map(tag => applyCdnAndPackagePath(tag, 'links'));
@@ -291,6 +296,7 @@ function HtmlWebpackDeployPlugin (options) {
     }
 
     this.options = {
+      useCdn,
       assets,
       packages,
       copy: copyList,
@@ -306,10 +312,20 @@ HtmlWebpackDeployPlugin.prototype.apply = function (compiler) {
   if (compiler.options.mode === 'development') {
     const applyDevPath = tag => {
       if (isDefined(tag.devPath)) {
-        tag = {
-          ...tag,
-          path: tag.devPath
-        };
+        const { useCdn } = this.options;
+        let localUseCdn = useCdn;
+        if (isDefined(tag.packageDefinition) && isDefined(tag.packageDefinition.useCdn)) {
+          localUseCdn = tag.packageDefinition.useCdn;
+        }
+        if (isDefined(tag.useCdn)) {
+          localUseCdn = tag.useCdn;
+        }
+        if (!localUseCdn) {
+          tag = {
+            ...tag,
+            path: tag.devPath
+          };
+        }
       }
       return tag;
     };
