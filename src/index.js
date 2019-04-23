@@ -262,7 +262,7 @@ function HtmlWebpackDeployPlugin (options) {
               path: addPackagePath(packageName, packageVersion, tag.path)
             };
             if (isDefined(tag.devPath)) {
-              tag.devPath = addPackagePath(packageName, packageVersion, tag.devPath);
+              newTag.devPath = addPackagePath(packageName, packageVersion, tag.devPath);
             }
           }
           return newTag;
