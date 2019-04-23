@@ -265,7 +265,7 @@ describe('end to end', () => {
       });
     });
 
-    fit('injects cdn urls when useCdn is true but not for tags that have useCdn false', done => {
+    it('injects cdn urls when useCdn is true but not for tags that have useCdn false', done => {
       webpack(createWebpackConfig({
         options: {
           packages: {
