@@ -246,6 +246,46 @@ describe('option validation', () => {
       done();
     });
 
+    it('should throw an error for a package that has a non boolean useCdn', done => {
+      const theFunction = () => {
+        return new HtmlWebpackDeployPlugin({ packages: { 'the-package': { useCdn: '123', links: 'the-file' } } });
+      };
+      expect(theFunction).toThrowError(/(options.packages.the-package.useCdn should be a boolean)/);
+      done();
+    });
+
+    it('should not throw an error for a package that has a boolean useCdn', done => {
+      const theFunction = () => {
+        return new HtmlWebpackDeployPlugin({ packages: { 'the-package': { useCdn: true, links: 'the-file' } } });
+      };
+      expect(theFunction).not.toThrowError();
+      done();
+    });
+
+    it('should throw an error for a package that has a non function getCdnPath', done => {
+      const theFunction = () => {
+        return new HtmlWebpackDeployPlugin({ packages: { 'the-package': { getCdnPath: '123', links: 'the-file' } } });
+      };
+      expect(theFunction).toThrowError(/(options.packages.the-package.getCdnPath should be a function)/);
+      done();
+    });
+
+    it('should throw an error for a package that has a function getCdnPath the returns a non string', done => {
+      const theFunction = () => {
+        return new HtmlWebpackDeployPlugin({ packages: { 'the-package': { getCdnPath: () => 123, links: 'the-file' } } });
+      };
+      expect(theFunction).toThrowError(/(options.packages.the-package.getCdnPath should be a function)/);
+      done();
+    });
+
+    it('should not throw an error for a package that has a function getCdnPath', done => {
+      const theFunction = () => {
+        return new HtmlWebpackDeployPlugin({ packages: { 'the-package': { getCdnPath: () => '', links: 'the-file' } } });
+      };
+      expect(theFunction).not.toThrowError();
+      done();
+    });
+
     runTestsForOption(['packages', 'bootstrap', 'links']);
     runTestsForOption(['packages', 'bootstrap', 'scripts']);
 

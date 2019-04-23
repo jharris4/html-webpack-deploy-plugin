@@ -187,7 +187,8 @@ function HtmlWebpackDeployPlugin (options) {
       assert(isObject(optionPackages), `${PLUGIN_NAME} options.packages should be an object`);
       packages = {};
       Object.keys(optionPackages).forEach(packageName => {
-        const packageAssets = getDeployObject(optionPackages[packageName], 'packages.' + packageName);
+        const packageDefinition = optionPackages[packageName];
+        const packageAssets = getDeployObject(packageDefinition, 'packages.' + packageName);
         packages[packageName] = packageAssets;
 
         const packagePath = findPackagePath(process.cwd(), packageName);
@@ -202,6 +203,13 @@ function HtmlWebpackDeployPlugin (options) {
         assert(isObject(packageNpmPackage), `${PLUGIN_NAME} options.packages.${packageName} package.json was malformed: ${packageFilePath}/package.json`);
         const packageVersion = packageNpmPackage.version;
         assert(isString(packageNpmPackage.version), `${PLUGIN_NAME} options.packages.${packageName} package version could not be found`);
+        if (isDefined(packageDefinition.useCdn)) {
+          assert(isBoolean(packageDefinition.useCdn), `${PLUGIN_NAME} options.packages.${packageName}.useCdn should be a boolean`);
+        }
+        if (isDefined(packageDefinition.getCdnPath)) {
+          assert(isFunction(packageDefinition.getCdnPath), `${PLUGIN_NAME} options.packages.${packageName}.getCdnPath should be a function`);
+          assert(isString(packageDefinition.getCdnPath('', '', '')), `${PLUGIN_NAME} options.packages.${packageName}.getCdnPath should be a function that returns a string`);
+        }
 
         // always copy even when using cdn
         packageAssets.copy = packageAssets.copy.map(copy => ({
@@ -212,10 +220,16 @@ function HtmlWebpackDeployPlugin (options) {
 
         const applyCdnAndPackagePath = (tag, optionName) => {
           let localUseCdn = useCdn;
-          let localGetCdnPath = getCdnPath;
+          if (isDefined(packageDefinition.useCdn)) {
+            localUseCdn = packageDefinition.useCdn;
+          }
           if (isDefined(tag.useCdn)) {
             assert(isBoolean(tag.useCdn), `${PLUGIN_NAME} options.packages.${packageName}.${optionName} object useCdn should be a boolean`);
             localUseCdn = tag.useCdn;
+          }
+          let localGetCdnPath = getCdnPath;
+          if (isDefined(packageDefinition.getCdnPath)) {
+            localGetCdnPath = packageDefinition.getCdnPath;
           }
           if (isDefined(tag.getCdnPath)) {
             assert(isFunction(tag.getCdnPath), `${PLUGIN_NAME} options.packages.${packageName}.${optionName} object getCdnPath should be a function`);

@@ -309,6 +309,72 @@ describe('end to end', () => {
       });
     });
 
+    fit('injects cdn urls when useCdn is true or false at the package or tag level', done => {
+      webpack(createWebpackConfig({
+        options: {
+          packages: {
+            'bootstrap': {
+              links: [
+                'link-a',
+                {
+                  path: 'link-b',
+                  useCdn: false
+                }
+              ],
+              scripts: [
+                {
+                  path: 'script-a',
+                  useCdn: false
+                },
+                'script-b'
+              ]
+            },
+            'bulma': {
+              links: [
+                'link-c',
+                {
+                  path: 'link-d',
+                  useCdn: true
+                }
+              ],
+              scripts: [
+                {
+                  path: 'script-c',
+                  useCdn: true
+                },
+                'script-d'
+              ],
+              useCdn: false
+            }
+          },
+          getCdnPath: (packageName, packageVersion, packagePath) => `http://mydomain.com/${packageName}@${packageVersion}/${packagePath}`,
+          useCdn: true
+        }
+      }), (err, result) => {
+        expect(err).toBeFalsy();
+        expect(JSON.stringify(result.compilation.errors)).toBe('[]');
+        fs.readFile(OUPUT_HTML_FILE, 'utf8', (er, data) => {
+          expect(er).toBeFalsy();
+          const $ = cheerio.load(data);
+          expect($('script').length).toBe(6);
+          expect($('link').length).toBe(5);
+          expect($('script[src="app.js"]')).toBeTag({ tagName: 'script', attributes: { 'src': 'app.js', 'type': 'text/javascript' } });
+          expect($('script[src="style.js"]')).toBeTag({ tagName: 'script', attributes: { 'src': 'style.js', 'type': 'text/javascript' } });
+          expect($('link[href="style.css"]')).toBeTag({ tagName: 'link', attributes: { 'href': 'style.css', 'rel': 'stylesheet' } });
+          expect($('link[href="http://mydomain.com/bootstrap@4.3.1/link-a"]')).toBeTag({ tagName: 'link', attributes: { 'href': 'http://mydomain.com/bootstrap@4.3.1/link-a', 'rel': 'stylesheet' } });
+          expect($('link[href="packages/bootstrap-4.3.1/link-b"]')).toBeTag({ tagName: 'link', attributes: { 'href': 'packages/bootstrap-4.3.1/link-b', 'rel': 'stylesheet' } });
+          expect($('script[src="packages/bootstrap-4.3.1/script-a"]')).toBeTag({ tagName: 'script', attributes: { 'src': 'packages/bootstrap-4.3.1/script-a' } });
+          expect($('script[src="http://mydomain.com/bootstrap@4.3.1/script-b"]')).toBeTag({ tagName: 'script', attributes: { 'src': 'http://mydomain.com/bootstrap@4.3.1/script-b' } });
+          expect($('link[href="packages/bulma-0.7.4/link-c"]')).toBeTag({ tagName: 'link', attributes: { 'href': 'packages/bulma-0.7.4/link-c', 'rel': 'stylesheet' } });
+          expect($('link[href="http://mydomain.com/bulma@0.7.4/link-d"]')).toBeTag({ tagName: 'link', attributes: { 'href': 'http://mydomain.com/bulma@0.7.4/link-d', 'rel': 'stylesheet' } });
+          expect($('script[src="http://mydomain.com/bulma@0.7.4/script-c"]')).toBeTag({ tagName: 'script', attributes: { 'src': 'http://mydomain.com/bulma@0.7.4/script-c' } });
+          expect($('script[src="packages/bulma-0.7.4/script-d"]')).toBeTag({ tagName: 'script', attributes: { 'src': 'packages/bulma-0.7.4/script-d' } });
+
+          done();
+        });
+      });
+    });
+
     it('injects cdn urls with a custom getCdnPath', done => {
       webpack(createWebpackConfig({
         options: {
