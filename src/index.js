@@ -22,7 +22,7 @@ const DEFAULT_OPTIONS = {
 };
 
 const TAGS_PASSTHROUGH_OPTIONS = [
-  'append', 'useHash', 'addHash', 'usePublicPath', 'addPublicPath'
+  'append', 'hash', 'useHash', 'addHash', 'publicPath', 'usePublicPath', 'addPublicPath'
 ];
 
 function isDefined (v) {
@@ -54,11 +54,11 @@ function applyConstructor (Constructor, ...args) {
   return new Constructor(...args);
 }
 
-function checkForTagOptionErrors (tagOptions, optionName, packageName) {
+function checkForTagErrors (options, optionName, packageName) {
   const errorName = packageName ? packageName + '.' + optionName : optionName;
   try {
-    applyConstructor(HtmlWebpackTagsPlugin, { [optionName]: tagOptions });
-    // new HtmlWebpackTagsPlugin({ [optionName]: tagOptions });
+    applyConstructor(HtmlWebpackTagsPlugin, options);
+    // new HtmlWebpackTagsPlugin(options);
   } catch (err) {
     if (err.message.indexOf('HtmlWebpackTagsPlugin') !== -1) {
       const msg = err.message.replace(`HtmlWebpackTagsPlugin options.${optionName}`, '');
@@ -67,6 +67,10 @@ function checkForTagOptionErrors (tagOptions, optionName, packageName) {
       throw err;
     }
   }
+}
+
+function checkForTagOptionErrors (value, optionName, packageName) {
+  checkForTagErrors({ [optionName]: value }, optionName, packageName);
 }
 
 function getTagObjects (tags, optionName, packageName) {
@@ -131,6 +135,7 @@ function HtmlWebpackDeployPlugin (options) {
         tagsPassthroughOptions[optionName] = options[optionName];
       }
     });
+    checkForTagErrors(tagsPassthroughOptions);
     if (!isDefined(options.append)) {
       tagsPassthroughOptions.append = DEFAULT_OPTIONS.append;
     }

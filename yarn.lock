@@ -1827,10 +1827,10 @@ html-webpack-plugin@^3.2.0:
     toposort "^1.0.0"
     util.promisify "1.0.0"
 
-html-webpack-tags-plugin@^2.0.6:
-  version "2.0.6"
-  resolved "https://registry.yarnpkg.com/html-webpack-tags-plugin/-/html-webpack-tags-plugin-2.0.6.tgz#c044b505616df8af23e8e17eabdfad2731c07bca"
-  integrity sha512-MX2CRha+x29Vqwc7JnsuAfsKPk3ZKGstnDreZDAC0IIcZJF5NUIkMn9r4B4K0BjZT3HdOU5s/y1NUYm8i2hlfg==
+html-webpack-tags-plugin@^2.0.7:
+  version "2.0.7"
+  resolved "https://registry.yarnpkg.com/html-webpack-tags-plugin/-/html-webpack-tags-plugin-2.0.7.tgz#82fe34443242c3e93aae84d9638d729235352fbf"
+  integrity sha512-YV5U7vFrjSSUnzGQej5j81hRKBVVcEdTyX10x+6RuG882RdIStVGwNBNrQtpI1G5qU/Dd6uPMv2xeihQV04x7Q==
   dependencies:
     glob "^7.1.3"
     minimatch "^3.0.4"

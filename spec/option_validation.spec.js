@@ -34,6 +34,132 @@ describe('option validation', () => {
     done();
   });
 
+  describe('options.append', () => {
+    it('should not throw an error if the append flag is not provided', done => {
+      const theFunction = () => {
+        return new HtmlWebpackDeployPlugin({});
+      };
+
+      expect(theFunction).not.toThrowError();
+      done();
+    });
+
+    it('should throw an error if the append flag is not a boolean', done => {
+      const theFunction = () => {
+        return new HtmlWebpackDeployPlugin({ append: 'hello' });
+      };
+
+      expect(theFunction).toThrowError(/(options.append should be a boolean)/);
+      done();
+    });
+  });
+
+  describe('options.publicPath', () => {
+    it('should throw an error if the publicPath flag is not a boolean or string or a function', done => {
+      const theFunction = () => {
+        return new HtmlWebpackDeployPlugin({ publicPath: 123 });
+      };
+
+      expect(theFunction).toThrowError(/(options should specify a publicPath that is either a boolean or a string)/);
+      done();
+    });
+
+    it('should throw an error if the usePublicPath flag is not a boolean', done => {
+      const theFunction = () => {
+        return new HtmlWebpackDeployPlugin({ usePublicPath: 123 });
+      };
+
+      expect(theFunction).toThrowError(/(options.usePublicPath should be a boolean)/);
+      done();
+    });
+
+    it('should throw an error if the addPublicPath option is not a function', done => {
+      const theFunction = () => {
+        return new HtmlWebpackDeployPlugin({ addPublicPath: 123 });
+      };
+
+      expect(theFunction).toThrowError(/(options.addPublicPath should be a function)/);
+      done();
+    });
+
+    it('should throw an error if publicPath and usePublicPath are specified together', done => {
+      const theFunction = () => {
+        return new HtmlWebpackDeployPlugin({ publicPath: true, usePublicPath: false });
+      };
+
+      expect(theFunction).toThrowError(/(options.publicPath should not be used with either usePublicPath or addPublicPath)/);
+      done();
+    });
+
+    it('should throw an error if publicPath and addPublicPath are specified together', done => {
+      const theFunction = () => {
+        return new HtmlWebpackDeployPlugin({ publicPath: true, addPublicPath: () => '' });
+      };
+
+      expect(theFunction).toThrowError(/(options.publicPath should not be used with either usePublicPath or addPublicPath)/);
+      done();
+    });
+  });
+
+  describe('options.hash', () => {
+    it('should throw an error if the hash option is not a boolean or function', done => {
+      const nonBooleanCheck = [123, 'not a boolean', /regex/, [], {}];
+
+      nonBooleanCheck.forEach(val => {
+        const theCheck = () => {
+          return new HtmlWebpackDeployPlugin({ append: true, publicPath: true, hash: val });
+        };
+        expect(theCheck).toThrowError(/(options.hash should be a boolean or a function)/);
+      });
+      done();
+    });
+
+    it('should throw an error if the hash is a string', done => {
+      const theFunction = () => {
+        return new HtmlWebpackDeployPlugin({ hash: 'my-hash' });
+      };
+
+      expect(theFunction).toThrowError(/(options.hash should be a boolean or a function)/);
+      done();
+    });
+
+    it('should throw an error if the useHash flag is not a boolean', done => {
+      const theFunction = () => {
+        return new HtmlWebpackDeployPlugin({ useHash: 123 });
+      };
+
+      expect(theFunction).toThrowError(/(options.useHash should be a boolean)/);
+      done();
+    });
+
+    it('should throw an error if the addHash option is not a function', done => {
+      const theFunction = () => {
+        return new HtmlWebpackDeployPlugin({ addHash: 123 });
+      };
+
+      expect(theFunction).toThrowError(/(options.addHash should be a function)/);
+      done();
+    });
+
+    it('should throw an error if hash and useHash are specified together', done => {
+      const theFunction = () => {
+        return new HtmlWebpackDeployPlugin({ hash: true, useHash: false });
+      };
+
+      expect(theFunction).toThrowError(/(options.hash should not be used with either useHash or addHash)/);
+      done();
+    });
+
+    it('should throw an error if hash and addHash are specified together', done => {
+      const theFunction = () => {
+        return new HtmlWebpackDeployPlugin({ hash: true, addHash: () => '' });
+      };
+
+      expect(theFunction).toThrowError(/(options.hash should not be used with either useHash or addHash)/);
+      done();
+    });
+  });
+
   describe('options.assets', () => {
     let savedCwd = process.cwd();
     beforeEach(done => {
@@ -61,6 +187,8 @@ describe('option validation', () => {
       expect(theFunction).toThrowError(/(ptions.assets should be an object with a copy, links, or scripts property)/);
       done();
     });
+
+    // TODO - ASSETS.APPEND GOES HERE
 
     it('should not throw an error if there are assets with empty copy array', done => {
       const theFunction = () => {
@@ -246,6 +374,8 @@ describe('option validation', () => {
       done();
     });
 
+    // TODO - PACKAGES.PACKAGE.APPEND GOES HERE
+
     it('should throw an error for a package that has a non boolean useCdn', done => {
       const theFunction = () => {
         return new HtmlWebpackDeployPlugin({ packages: { 'the-package': { useCdn: '123', links: 'the-file' } } });
@@ -380,26 +510,6 @@ describe('option validation', () => {
         return new HtmlWebpackDeployPlugin({ packages: { 'the-package': { links: { path: 'a-path', devPath: 'dev-path' } } } });
       };
       expect(theFunction).not.toThrowError();
-      done();
-    });
-  });
-
-  describe('options.append', () => {
-    it('should not throw an error if the append flag is not provided', done => {
-      const theFunction = () => {
-        return new HtmlWebpackDeployPlugin({ });
-      };
-
-      expect(theFunction).not.toThrowError();
-      done();
-    });
-
-    it('should throw an error if the append flag is not a boolean', done => {
-      const theFunction = () => {
-        return new HtmlWebpackDeployPlugin({ append: 'hello' });
-      };
-
-      expect(theFunction).toThrowError(/(options.append should be a boolean)/);
       done();
     });
   });
