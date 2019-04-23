@@ -104,6 +104,38 @@ describe('option validation', () => {
 
     runTestsForOption(['assets', 'links']);
     runTestsForOption(['assets', 'scripts']);
+
+    it('should throw an error for assets with scripts that have a non-string devPath', done => {
+      const theFunction = () => {
+        return new HtmlWebpackDeployPlugin({ assets: { scripts: { path: 'a-path', devPath: 123 } } });
+      };
+      expect(theFunction).toThrowError(/(options.assets.scripts object devPath should be a string)/);
+      done();
+    });
+
+    it('should not throw an error for assets with scripts that have a string devPath', done => {
+      const theFunction = () => {
+        return new HtmlWebpackDeployPlugin({ assets: { scripts: { path: 'a-path', devPath: 'dev-path' } } });
+      };
+      expect(theFunction).not.toThrowError();
+      done();
+    });
+
+    it('should throw an error for assets with links that have a non-string devPath', done => {
+      const theFunction = () => {
+        return new HtmlWebpackDeployPlugin({ assets: { links: { path: 'a-path', devPath: 123 } } });
+      };
+      expect(theFunction).toThrowError(/(options.assets.links object devPath should be a string)/);
+      done();
+    });
+
+    it('should not throw an error for assets with links that have a string devPath', done => {
+      const theFunction = () => {
+        return new HtmlWebpackDeployPlugin({ assets: { links: { path: 'a-path', devPath: 'dev-path' } } });
+      };
+      expect(theFunction).not.toThrowError();
+      done();
+    });
   });
 
   describe('options.packages', () => {
@@ -242,6 +274,70 @@ describe('option validation', () => {
     it('should not throw an error for a package with scripts that are objects with string variableName', done => {
       const theFunction = () => {
         return new HtmlWebpackDeployPlugin({ packages: { 'the-package': { scripts: { path: 'a-path', variableName: 'the-variable-name' } } } });
+      };
+      expect(theFunction).not.toThrowError();
+      done();
+    });
+
+    it('should throw an error for a package with scripts that have a non-string cdnPath', done => {
+      const theFunction = () => {
+        return new HtmlWebpackDeployPlugin({ packages: { 'the-package': { scripts: { path: 'a-path', cdnPath: 123 } } } });
+      };
+      expect(theFunction).toThrowError(/(options.packages.the-package.scripts object cdnPath should be a string)/);
+      done();
+    });
+
+    it('should not throw an error for a package with scripts that have a string cdnPath', done => {
+      const theFunction = () => {
+        return new HtmlWebpackDeployPlugin({ packages: { 'the-package': { scripts: { path: 'a-path', cdnPath: 'cdn-path' } } } });
+      };
+      expect(theFunction).not.toThrowError();
+      done();
+    });
+
+    it('should throw an error for a package with links that have a non-string cdnPath', done => {
+      const theFunction = () => {
+        return new HtmlWebpackDeployPlugin({ packages: { 'the-package': { links: { path: 'a-path', cdnPath: 123 } } } });
+      };
+      expect(theFunction).toThrowError(/(options.packages.the-package.links object cdnPath should be a string)/);
+      done();
+    });
+
+    it('should not throw an error for a package with links that have a string cdnPath', done => {
+      const theFunction = () => {
+        return new HtmlWebpackDeployPlugin({ packages: { 'the-package': { links: { path: 'a-path', cdnPath: 'cdn-path' } } } });
+      };
+      expect(theFunction).not.toThrowError();
+      done();
+    });
+
+    it('should throw an error for a package with scripts that have a non-string devPath', done => {
+      const theFunction = () => {
+        return new HtmlWebpackDeployPlugin({ packages: { 'the-package': { scripts: { path: 'a-path', devPath: 123 } } } });
+      };
+      expect(theFunction).toThrowError(/(options.packages.the-package.scripts object devPath should be a string)/);
+      done();
+    });
+
+    it('should not throw an error for a package with scripts that have a string devPath', done => {
+      const theFunction = () => {
+        return new HtmlWebpackDeployPlugin({ packages: { 'the-package': { scripts: { path: 'a-path', devPath: 'dev-path' } } } });
+      };
+      expect(theFunction).not.toThrowError();
+      done();
+    });
+
+    it('should throw an error for a package with links that have a non-string devPath', done => {
+      const theFunction = () => {
+        return new HtmlWebpackDeployPlugin({ packages: { 'the-package': { links: { path: 'a-path', devPath: 123 } } } });
+      };
+      expect(theFunction).toThrowError(/(options.packages.the-package.links object devPath should be a string)/);
+      done();
+    });
+
+    it('should not throw an error for a package with links that have a string devPath', done => {
+      const theFunction = () => {
+        return new HtmlWebpackDeployPlugin({ packages: { 'the-package': { links: { path: 'a-path', devPath: 'dev-path' } } } });
       };
       expect(theFunction).not.toThrowError();
       done();

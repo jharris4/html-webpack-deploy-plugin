@@ -163,8 +163,20 @@ function HtmlWebpackDeployPlugin (options) {
       assert(isObject(options.assets), `${PLUGIN_NAME} options.assets should be an object`);
       assets = getDeployObject(options.assets, 'assets');
       assets.copy = assets.copy.map(copy => ({ ...copy, to: addAssetPath(copy.to) }));
-      assets.links = assets.links.map(link => ({ ...link, path: addAssetPath(link.path) }));
-      assets.scripts = assets.scripts.map(script => ({ ...script, path: addAssetPath(script.path) }));
+      const addAssetPaths = (tag, optionName) => {
+        const newTag = {
+          ...tag,
+          path: addAssetPath(tag.path)
+        };
+        if (isDefined(tag.devPath)) {
+          assert(isString(tag.devPath), `${PLUGIN_NAME} options.assets.${optionName} object devPath should be a string`);
+          newTag.devPath = addAssetPath(tag.devPath);
+        }
+        return newTag;
+      };
+      const getAddAssetPaths = optionName => tag => addAssetPaths(tag, optionName);
+      assets.links = assets.links.map(getAddAssetPaths('links'));
+      assets.scripts = assets.scripts.map(getAddAssetPaths('scripts'));
       copyList.push(...assets.copy);
       linkList.push(...assets.links);
       scriptList.push(...assets.scripts);
@@ -198,7 +210,7 @@ function HtmlWebpackDeployPlugin (options) {
           to: addPackagePath(packageName, packageVersion, copy.to)
         }));
 
-        const applyCdn = (tag, optionName) => {
+        const applyCdnAndPackagePath = (tag, optionName) => {
           let localUseCdn = useCdn;
           let localGetCdnPath = getCdnPath;
           if (isDefined(tag.useCdn)) {
@@ -210,10 +222,18 @@ function HtmlWebpackDeployPlugin (options) {
             assert(isString(tag.getCdnPath('', '', '')), `${PLUGIN_NAME} options.packages.${packageName}.${optionName} object getCdnPath should be a function that returns a string`);
             localGetCdnPath = tag.getCdnPath;
           }
+          let localCdnPath = tag.path;
+          if (isDefined(tag.cdnPath)) {
+            assert(isString(tag.cdnPath), `${PLUGIN_NAME} options.packages.${packageName}.${optionName} object cdnPath should be a string`);
+            localCdnPath = tag.cdnPath;
+          }
+          if (isDefined(tag.devPath)) {
+            assert(isString(tag.devPath), `${PLUGIN_NAME} options.packages.${packageName}.${optionName} object devPath should be a string`);
+          }
           if (localUseCdn) {
             tag = {
               ...tag,
-              path: localGetCdnPath(packageName, packageVersion, tag.path),
+              path: localGetCdnPath(packageName, packageVersion, localCdnPath),
               publicPath: false,
               hash: false
             };
@@ -222,12 +242,15 @@ function HtmlWebpackDeployPlugin (options) {
               ...tag,
               path: addPackagePath(packageName, packageVersion, tag.path)
             };
+            if (isDefined(tag.devPath)) {
+              tag.devPath = addPackagePath(packageName, packageVersion, tag.devPath);
+            }
           }
           return tag;
         };
 
-        packageAssets.links = packageAssets.links.map(tag => applyCdn(tag, 'links'));
-        packageAssets.scripts = packageAssets.scripts.map(tag => applyCdn(tag, 'scripts'));
+        packageAssets.links = packageAssets.links.map(tag => applyCdnAndPackagePath(tag, 'links'));
+        packageAssets.scripts = packageAssets.scripts.map(tag => applyCdnAndPackagePath(tag, 'scripts'));
 
         const applyExternal = script => {
           if (isDefined(script.variableName)) {
@@ -265,8 +288,23 @@ function HtmlWebpackDeployPlugin (options) {
 }
 
 HtmlWebpackDeployPlugin.prototype.apply = function (compiler) {
-  new CopyWebpackPlugin(this.options.copy).apply(compiler);
-  new HtmlWebpackTagsPlugin({ ...this.options.tagsPassthroughOptions, links: this.options.links, scripts: this.options.scripts }).apply(compiler);
+  let { copy, tagsPassthroughOptions, links, scripts } = this.options;
+  if (compiler.options.mode === 'development') {
+    const applyDevPath = tag => {
+      if (isDefined(tag.devPath)) {
+        tag = {
+          ...tag,
+          path: tag.devPath
+        };
+      }
+      return tag;
+    };
+
+    links = links.map(applyDevPath);
+    scripts = scripts.map(applyDevPath);
+  }
+  new CopyWebpackPlugin(copy).apply(compiler);
+  new HtmlWebpackTagsPlugin({ ...tagsPassthroughOptions, links, scripts }).apply(compiler);
 };
 
 module.exports = HtmlWebpackDeployPlugin;
