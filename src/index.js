@@ -10,336 +10,323 @@ const HtmlWebpackTagsPlugin = require('html-webpack-tags-plugin');
 
 const PLUGIN_NAME = 'HtmlWebpackDeployPlugin';
 
-const DEFAULT_OPTIONS = {
-  append: false,
+const { getValidatedOptions, IS } = HtmlWebpackTagsPlugin.api;
+
+const DEFAULT_ROOT_OPTIONS = {
   assets: {},
   packages: {},
+  // TODO - idea for shortcut like hash / publicPath on tags
+  // assetPath: 'my-assets' (string)
+  // assetPath: ''/false? (disable)
+  // assetPath: assetPath => path.join('assets', assetPath) // (function)
   addAssetPath: assetPath => path.join('assets', assetPath),
   addPackagePath: (packageName, packageVersion, packagePath) => path.join('packages', packageName + '-' + packageVersion, packagePath),
-  findPackagePath: (cwd, packageName) => findUp.sync(slash(path.join('node_modules', packageName)), { cwd }),
+  findPackagePath: (cwd, packageName) => findUp.sync(slash(path.join('node_modules', packageName)), { cwd })
+};
+
+const DEFAULT_MAIN_OPTIONS = {
   useCdn: false,
   getCdnPath: (packageName, packageVersion, packagePath) => `https://unpkg.com/${packageName}@${packageVersion}/${packagePath}`
 };
 
-const TAGS_PASSTHROUGH_OPTIONS = [
-  'append', 'hash', 'useHash', 'addHash', 'publicPath', 'usePublicPath', 'addPublicPath'
-];
+const { isDefined, isArray, isObject, isString, isBoolean, isFunction } = IS;
 
-function isDefined (v) {
-  return v !== void 0;
-}
+const isFunctionReturningString = v => isFunction(v) && isString(v('', '', '')); // 3rd string needed or this throws
 
-function isArray (v) {
-  return Array.isArray(v);
-}
-
-function isObject (v) {
-  return v !== null && v !== void 0 && typeof v === 'object' && !isArray(v);
-}
-
-function isString (v) {
-  return v !== null && v !== void 0 && (typeof v === 'string' || v instanceof String);
-}
-
-function isBoolean (v) {
-  return v === true || v === false;
-}
-
-function isFunction (v) {
-  return typeof v === 'function';
-}
-
-// this function was only added to stop semistandard from complaining
-function applyConstructor (Constructor, ...args) {
-  return new Constructor(...args);
-}
-
-function checkForTagErrors (options, optionName, packageName) {
-  const errorName = packageName ? packageName + '.' + optionName : optionName;
-  try {
-    applyConstructor(HtmlWebpackTagsPlugin, options);
-    // new HtmlWebpackTagsPlugin(options);
-  } catch (err) {
-    if (err.message.indexOf('HtmlWebpackTagsPlugin') !== -1) {
-      const msg = err.message.replace(`HtmlWebpackTagsPlugin options.${optionName}`, '');
-      throw new Error(`${PLUGIN_NAME} options.${errorName}${msg}`);
-    } else {
-      throw err;
-    }
-  }
-}
-
-function checkForTagOptionErrors (value, optionName, packageName) {
-  checkForTagErrors({ [optionName]: value }, optionName, packageName);
-}
-
-function getTagObjects (tags, optionName, packageName) {
-  assert(isString(tags) || isArray(tags) || isObject(tags), `${PLUGIN_NAME} options.${packageName}.${optionName} should be a string, object, or array`);
-  checkForTagOptionErrors(tags, optionName, packageName);
-  if (isString(tags)) {
-    return [{ path: tags }];
-  } else if (isObject(tags)) {
-    return [tags];
+const getGroupLevelOptions = (options, optionPath, defaultOptions = {}) => {
+  if (isObject(options)) {
+    const { tags, links, scripts, ...otherOptions } = options;
+    return {
+      ...getValidatedOptions(otherOptions, optionPath, defaultOptions),
+      tags,
+      links,
+      scripts
+    };
   } else {
-    return tags.map(tag => isString(tag) ? { path: tag } : tag);
+    return getValidatedOptions(options, optionPath, defaultOptions);
   }
-}
+};
 
-function getDeployObject (deployObject, packageName) {
-  assert(isObject(deployObject), `${PLUGIN_NAME} options.${packageName} should be an object`);
-  let copyList = [];
-  let linksList = [];
-  let scriptsList = [];
-  const { copy, links, scripts } = deployObject;
-  assert(isDefined(copy) || isDefined(links) || isDefined(scripts),
-    `${PLUGIN_NAME} options.${packageName} should be an object with a copy, links, or scripts property`
-  );
-  if (isDefined(copy)) {
-    assert(isArray(copy) || isObject(copy), `${PLUGIN_NAME} options.${packageName}.copy should be an array or object`);
+const getTagsLevelOptions = (options, optionPath) => {
+  const validatedOptions = getValidatedOptions(options, optionPath, {});
+  if (isDefined(validatedOptions.copy)) {
+    const { copy } = validatedOptions;
+    assert(isArray(copy) || isObject(copy), `${optionPath}.copy should be an object or array of objects`);
     if (isObject(copy)) {
-      assert(isString(copy.from) && isString(copy.to), `${PLUGIN_NAME} options.${packageName}.copy should be an object with string properties from & to`);
-      copyList.push(copy);
+      assert(isString(copy.from) && isString(copy.to), `${optionPath}.copy should be an object with string properties from & to`);
+      validatedOptions.copy = [copy];
     } else {
+      const copyList = [];
       copy.forEach(copyItem => {
-        assert(isObject(copyItem), `${PLUGIN_NAME} options.${packageName}.copy should be an array of objects`);
-        assert(isString(copyItem.from) && isString(copyItem.to), `${PLUGIN_NAME} options.${packageName}.copy should be an array of objects with string properties from & to`);
+        assert(isObject(copyItem), `${optionPath}.copy should be an array of objects`);
+        assert(isString(copyItem.from) && isString(copyItem.to), `${optionPath}.copy should be an array of objects with string properties from & to`);
         copyList.push(copyItem);
       });
+      validatedOptions.copy = copyList;
     }
   }
+  return validatedOptions;
+};
+
+const getValidatedMainOptions = (options, optionPath, defaultMainOptions) => {
+  return getValidatedCdnOptions(getGroupLevelOptions(options, optionPath, defaultMainOptions), optionPath);
+};
+
+const getValidatedRootOptions = (options, optionPath, defaultRootOptions = DEFAULT_ROOT_OPTIONS, defaultMainOptions = DEFAULT_MAIN_OPTIONS) => {
+  const validatedRootOptions = {
+    ...defaultRootOptions
+  };
+  const validatedMainOptions = getValidatedMainOptions(options, optionPath, defaultMainOptions);
+  const { assets, packages, addAssetPath, addPackagePath, findPackagePath } = options;
+
+  if (isDefined(addAssetPath)) {
+    assert(isFunctionReturningString(addAssetPath), `${optionPath}.addAssetPath should be a function that returns a string`);
+    validatedRootOptions.addAssetPath = addAssetPath;
+  }
+  if (isDefined(addPackagePath)) {
+    assert(isFunctionReturningString(addPackagePath), `${optionPath}.addPackagePath should be a function that returns a string`);
+    validatedRootOptions.addPackagePath = addPackagePath;
+  }
+  if (isDefined(findPackagePath)) {
+    assert(isFunctionReturningString(findPackagePath), `${optionPath}.findPackagePath should be a function that returns a string`);
+    validatedRootOptions.findPackagePath = findPackagePath;
+  }
+  if (isDefined(assets)) {
+    validatedRootOptions.assets = getValidatedAssetsOptions(assets, validatedRootOptions, validatedMainOptions, `${optionPath}.assets`);
+  }
+  if (isDefined(packages)) {
+    validatedRootOptions.packages = getValidatedPackagesOptions(packages, validatedRootOptions, validatedMainOptions, `${optionPath}.packages`);
+  }
+
+  return validatedRootOptions;
+};
+
+const getValidatedAssetsOptions = (assets, rootOptions, mainOptions, optionPath) => {
+  const validatedAssets = getTagsLevelOptions(assets, optionPath);
+  const { addAssetPath } = rootOptions;
+  const { copy, links, scripts, tags, assetsOptions } = validatedAssets;
+
+  const baseOptions = { ...mainOptions, ...assetsOptions };
+
+  // TODO - make sure the merging here is working properly
+  const addAssetPaths = (tag, optionName) => {
+    const newTag = {
+      baseOptions,
+      ...tag,
+      path: addAssetPath(tag.path)
+    };
+    if (isDefined(tag.devPath)) {
+      assert(isString(tag.devPath), `${optionPath}.${optionName}.devPath should be a string`);
+      newTag.devPath = addAssetPath(tag.devPath);
+    }
+    return newTag;
+  };
+  const getAddAssetPaths = optionName => tag => addAssetPaths(tag, optionName);
+  if (isDefined(copy)) {
+    validatedAssets.copy = copy.map(copy => ({ ...copy, to: addAssetPath(copy.to) }));
+  }
   if (isDefined(links)) {
-    linksList = getTagObjects(links, 'links', packageName);
+    validatedAssets.links = links.map(getAddAssetPaths('links'));
   }
   if (isDefined(scripts)) {
-    scriptsList = getTagObjects(scripts, 'scripts', packageName);
+    validatedAssets.scripts = scripts.map(getAddAssetPaths('scripts'));
   }
-  return {
-    copy: copyList,
-    links: linksList,
-    scripts: scriptsList
+  if (isDefined(tags)) {
+    validatedAssets.tags = tags.map(getAddAssetPaths('tags'));
+  }
+  return validatedAssets;
+};
+
+// TODO make sure cdnPath (and devPath) are properly validated
+
+const getValidatedCdnOptions = (options, optionPath, defaultOptions = {}) => {
+  const { useCdn, getCdnPath, ...otherOptions } = options;
+  const validatedOptions = {
+    ...defaultOptions,
+    ...otherOptions
   };
-}
+  if (isDefined(useCdn)) {
+    assert(isBoolean(useCdn), `${optionPath}.useCdn should be a boolean`);
+    validatedOptions.useCdn = useCdn;
+  }
+  if (isDefined(getCdnPath)) {
+    assert(isFunctionReturningString(getCdnPath), `${optionPath}.getCdnPath should be a function that returns a string`);
+    validatedOptions.getCdnPath = getCdnPath;
+  }
+  return validatedOptions;
+};
+
+const getValidatedPackagesOptions = (packages, rootOptions, mainOptions, optionPath) => {
+  assert(isObject(packages), `${optionPath} should be an object`);
+  const validatedPackages = {};
+  Object.keys(packages).forEach(packageName => {
+    validatedPackages[packageName] = getValidatedPackageOptions(packages[packageName], packageName, rootOptions, mainOptions, optionPath);
+  });
+  return validatedPackages;
+};
+
+const getValidatedPackageOptions = (thePackage, packageName, rootOptions, mainOptions, optionPath) => {
+  optionPath = `${optionPath}.${packageName}`;
+  const validatedPackage = getValidatedCdnOptions(getTagsLevelOptions(thePackage, optionPath), optionPath, mainOptions);
+  const { copy, links, scripts, tags, ...packageOptions } = validatedPackage;
+  const { findPackagePath, addPackagePath } = rootOptions;
+  const packagePath = findPackagePath(process.cwd(), packageName);
+  assert(isString(packagePath), `${optionPath} package path could not be found`);
+  const packageFilePath = path.join(packagePath, 'package.json');
+  let packageNpmPackage;
+  try {
+    packageNpmPackage = JSON.parse(fs.readFileSync(packageFilePath, 'utf8'));
+  } catch (error) {
+    assert(false, `${optionPath} package.json not found in ${packageFilePath}`);
+  }
+  assert(isObject(packageNpmPackage), `${optionPath} package.json was malformed: ${packageFilePath}/package.json`);
+  const packageVersion = packageNpmPackage.version;
+  assert(isString(packageNpmPackage.version), `${optionPath} package version could not be found`);
+
+  validatedPackage.version = packageNpmPackage.version;
+
+  // always copy even when using cdn
+  if (isDefined(copy)) {
+    validatedPackage.copy = copy.map(copyItem => ({
+      ...copyItem,
+      from: path.join(packagePath, copyItem.from),
+      to: addPackagePath(packageName, packageVersion, copyItem.to)
+    }));
+  }
+
+  const applyExternal = script => {
+    if (isDefined(script.variableName)) {
+      assert(!isDefined(script.external), `${optionPath}.scripts object variableName and external cannot be used together`);
+      const { variableName } = script;
+      assert(isString(variableName), `${optionPath}.scripts object variableName should be a string`);
+      script = {
+        ...script,
+        external: {
+          packageName,
+          variableName
+        }
+      };
+    }
+    return script;
+  };
+
+  const baseOptions = { ...mainOptions, ...packageOptions };
+
+  // TODO - make sure cdn merging is working properly here
+  const applyCdnDevPackagePath = (tag, optionName) => {
+    let { useCdn, getCdnPath } = { ...baseOptions, ...getValidatedCdnOptions(tag, optionPath) };
+
+    let cdnPath = tag.path;
+    if (isDefined(tag.cdnPath)) {
+      assert(isString(tag.cdnPath), `${optionPath}.${optionName}.cdnPath should be a string`);
+      cdnPath = tag.cdnPath;
+    }
+    if (isDefined(tag.devPath)) {
+      assert(isString(tag.devPath), `${optionPath}.${optionName}.devPath should be a string`);
+    }
+    let newTag = {
+      ...validatedPackage,
+      ...tag,
+      packageName
+    };
+    if (useCdn) {
+      newTag = {
+        ...newTag,
+        path: getCdnPath(packageName, packageVersion, cdnPath),
+        publicPath: false,
+        hash: false,
+        useCdn: true
+      };
+    } else {
+      newTag = {
+        ...newTag,
+        path: addPackagePath(packageName, packageVersion, tag.path)
+      };
+      if (isDefined(tag.devPath)) {
+        newTag.devPath = addPackagePath(packageName, packageVersion, tag.devPath);
+      }
+    }
+    return newTag;
+  };
+
+  if (isDefined(links)) {
+    validatedPackage.links = links.map(tag => applyCdnDevPackagePath(tag, 'links'));
+  }
+  if (isDefined(scripts)) {
+    validatedPackage.scripts = scripts.map(tag => applyCdnDevPackagePath(tag, 'scripts'));
+    validatedPackage.scripts = validatedPackage.scripts.map(applyExternal);
+  }
+  if (isDefined(tags)) {
+    validatedPackage.tags = tags.map(tag => applyCdnDevPackagePath(tag, 'tags'));
+    const applyTagExternal = tag => {
+      if (isDefined(tag.type) && tag.type === 'js') {
+        return applyExternal(tag);
+      }
+      return tag;
+    };
+    validatedPackage.tags = validatedPackage.tags.map(applyTagExternal);
+  }
+  return validatedPackage;
+};
 
 function HtmlWebpackDeployPlugin (options) {
-  assert(isObject(options), `${PLUGIN_NAME} options should be an object`);
   const copyList = [];
   const linkList = [];
   const scriptList = [];
-  const tagsPassthroughOptions = {};
-  if (isObject(options)) {
-    let { assets, packages, addAssetPath, addPackagePath, findPackagePath, useCdn, getCdnPath } = DEFAULT_OPTIONS;
-
-    TAGS_PASSTHROUGH_OPTIONS.forEach(optionName => {
-      if (isDefined(options[optionName])) {
-        checkForTagOptionErrors(options[optionName], optionName);
-        tagsPassthroughOptions[optionName] = options[optionName];
-      }
-    });
-    checkForTagErrors(tagsPassthroughOptions);
-    if (!isDefined(options.append)) {
-      tagsPassthroughOptions.append = DEFAULT_OPTIONS.append;
+  const tagList = [];
+  const validatedOptions = getValidatedRootOptions(options, `${PLUGIN_NAME}.options`);
+  const { assets, packages } = validatedOptions;
+  const addSection = section => {
+    const { copy, links, scripts, tags } = section;
+    if (isDefined(copy)) {
+      copyList.push(...copy);
     }
-    if (isDefined(options.addAssetPath)) {
-      assert(isFunction(options.addAssetPath), `${PLUGIN_NAME} options.addAssetPath should be a function`);
-      assert(isString(options.addAssetPath('')), `${PLUGIN_NAME} options.addAssetPath should be a function that returns a string`);
-      addAssetPath = options.addAssetPath;
+    if (isDefined(links)) {
+      linkList.push(...links);
     }
-    if (isDefined(options.addPackagePath)) {
-      assert(isFunction(options.addPackagePath), `${PLUGIN_NAME} options.addPackagePath should be a function`);
-      assert(isString(options.addPackagePath('', '', '')), `${PLUGIN_NAME} options.addPackagePath should be a function that returns a string`);
-      addPackagePath = options.addPackagePath;
+    if (isDefined(scripts)) {
+      scriptList.push(...scripts);
     }
-    if (isDefined(options.findPackagePath)) {
-      assert(isFunction(options.findPackagePath), `${PLUGIN_NAME} options.findPackagePath should be a function`);
-      assert(isString(options.findPackagePath('', '')), `${PLUGIN_NAME} options.findPackagePath should be a function that returns a string`);
-      findPackagePath = options.findPackagePath;
+    if (isDefined(tags)) {
+      tagList.push(...tags);
     }
-    if (isDefined(options.useCdn)) {
-      assert(isBoolean(options.useCdn), `${PLUGIN_NAME} options.useCdn should be a boolean`);
-      useCdn = options.useCdn;
-    }
-    if (isDefined(options.getCdnPath)) {
-      assert(isFunction(options.getCdnPath), `${PLUGIN_NAME} options.getCdnPath should be a function`);
-      assert(isString(options.getCdnPath('', '', '')), `${PLUGIN_NAME} options.getCdnPath should be a function that returns a string`);
-      getCdnPath = options.getCdnPath;
-    }
-
-    if (isDefined(options.assets)) {
-      assert(isObject(options.assets), `${PLUGIN_NAME} options.assets should be an object`);
-      assets = getDeployObject(options.assets, 'assets');
-      assets.copy = assets.copy.map(copy => ({ ...copy, to: addAssetPath(copy.to) }));
-      const addAssetPaths = (tag, optionName) => {
-        const newTag = {
-          ...tag,
-          path: addAssetPath(tag.path)
-        };
-        if (isDefined(tag.devPath)) {
-          assert(isString(tag.devPath), `${PLUGIN_NAME} options.assets.${optionName} object devPath should be a string`);
-          newTag.devPath = addAssetPath(tag.devPath);
-        }
-        return newTag;
-      };
-      const getAddAssetPaths = optionName => tag => addAssetPaths(tag, optionName);
-      assets.links = assets.links.map(getAddAssetPaths('links'));
-      assets.scripts = assets.scripts.map(getAddAssetPaths('scripts'));
-      copyList.push(...assets.copy);
-      linkList.push(...assets.links);
-      scriptList.push(...assets.scripts);
-    }
-
-    if (isDefined(options.packages)) {
-      const { packages: optionPackages } = options;
-      assert(isObject(optionPackages), `${PLUGIN_NAME} options.packages should be an object`);
-      packages = {};
-      Object.keys(optionPackages).forEach(packageName => {
-        const packageDefinition = optionPackages[packageName];
-        const packageAssets = getDeployObject(packageDefinition, 'packages.' + packageName);
-        packages[packageName] = packageAssets;
-
-        const packagePath = findPackagePath(process.cwd(), packageName);
-        assert(isString(packagePath), `${PLUGIN_NAME} options.packages.${packageName} package path could not be found`);
-        const packageFilePath = path.join(packagePath, 'package.json');
-        let packageNpmPackage;
-        try {
-          packageNpmPackage = JSON.parse(fs.readFileSync(packageFilePath, 'utf8'));
-        } catch (error) {
-          assert(false, `${PLUGIN_NAME} options.packages.${packageName} package.json not found in ${packageFilePath}`);
-        }
-        assert(isObject(packageNpmPackage), `${PLUGIN_NAME} options.packages.${packageName} package.json was malformed: ${packageFilePath}/package.json`);
-        const packageVersion = packageNpmPackage.version;
-        assert(isString(packageNpmPackage.version), `${PLUGIN_NAME} options.packages.${packageName} package version could not be found`);
-        if (isDefined(packageDefinition.useCdn)) {
-          assert(isBoolean(packageDefinition.useCdn), `${PLUGIN_NAME} options.packages.${packageName}.useCdn should be a boolean`);
-        }
-        if (isDefined(packageDefinition.getCdnPath)) {
-          assert(isFunction(packageDefinition.getCdnPath), `${PLUGIN_NAME} options.packages.${packageName}.getCdnPath should be a function`);
-          assert(isString(packageDefinition.getCdnPath('', '', '')), `${PLUGIN_NAME} options.packages.${packageName}.getCdnPath should be a function that returns a string`);
-        }
-
-        // always copy even when using cdn
-        packageAssets.copy = packageAssets.copy.map(copy => ({
-          ...copy,
-          from: path.join(packagePath, copy.from),
-          to: addPackagePath(packageName, packageVersion, copy.to)
-        }));
-
-        const applyCdnAndPackagePath = (tag, optionName) => {
-          let localUseCdn = useCdn;
-          if (isDefined(packageDefinition.useCdn)) {
-            localUseCdn = packageDefinition.useCdn;
-          }
-          if (isDefined(tag.useCdn)) {
-            assert(isBoolean(tag.useCdn), `${PLUGIN_NAME} options.packages.${packageName}.${optionName} object useCdn should be a boolean`);
-            localUseCdn = tag.useCdn;
-          }
-          let localGetCdnPath = getCdnPath;
-          if (isDefined(packageDefinition.getCdnPath)) {
-            localGetCdnPath = packageDefinition.getCdnPath;
-          }
-          if (isDefined(tag.getCdnPath)) {
-            assert(isFunction(tag.getCdnPath), `${PLUGIN_NAME} options.packages.${packageName}.${optionName} object getCdnPath should be a function`);
-            assert(isString(tag.getCdnPath('', '', '')), `${PLUGIN_NAME} options.packages.${packageName}.${optionName} object getCdnPath should be a function that returns a string`);
-            localGetCdnPath = tag.getCdnPath;
-          }
-          let localCdnPath = tag.path;
-          if (isDefined(tag.cdnPath)) {
-            assert(isString(tag.cdnPath), `${PLUGIN_NAME} options.packages.${packageName}.${optionName} object cdnPath should be a string`);
-            localCdnPath = tag.cdnPath;
-          }
-          if (isDefined(tag.devPath)) {
-            assert(isString(tag.devPath), `${PLUGIN_NAME} options.packages.${packageName}.${optionName} object devPath should be a string`);
-          }
-          let newTag = {
-            ...tag,
-            packageName,
-            packageDefinition
-          };
-          if (localUseCdn) {
-            newTag = {
-              ...newTag,
-              path: localGetCdnPath(packageName, packageVersion, localCdnPath),
-              publicPath: false,
-              hash: false
-            };
-          } else {
-            newTag = {
-              ...newTag,
-              path: addPackagePath(packageName, packageVersion, tag.path)
-            };
-            if (isDefined(tag.devPath)) {
-              newTag.devPath = addPackagePath(packageName, packageVersion, tag.devPath);
-            }
-          }
-          return newTag;
-        };
-
-        packageAssets.links = packageAssets.links.map(tag => applyCdnAndPackagePath(tag, 'links'));
-        packageAssets.scripts = packageAssets.scripts.map(tag => applyCdnAndPackagePath(tag, 'scripts'));
-
-        const applyExternal = script => {
-          if (isDefined(script.variableName)) {
-            assert(!isDefined(script.external), `${PLUGIN_NAME} options.packages.${packageName}.scripts object variableName and external cannot be used together`);
-            const { variableName } = script;
-            assert(isString(variableName), `${PLUGIN_NAME} options.packages.${packageName}.scripts object variableName should be a string`);
-            script = {
-              ...script,
-              external: {
-                packageName,
-                variableName
-              }
-            };
-          }
-          return script;
-        };
-
-        packageAssets.scripts = packageAssets.scripts.map(applyExternal);
-
-        copyList.push(...packageAssets.copy);
-        linkList.push(...packageAssets.links);
-        scriptList.push(...packageAssets.scripts);
-      });
-    }
-
-    this.options = {
-      useCdn,
-      assets,
-      packages,
-      copy: copyList,
-      links: linkList,
-      scripts: scriptList,
-      tagsPassthroughOptions
-    };
+  };
+  if (isDefined(assets)) {
+    addSection(assets);
   }
+  if (isDefined(packages)) {
+    Object.keys(packages).forEach(packageName => {
+      addSection(packages[packageName]);
+    });
+  }
+
+  this.options = {
+    copy: copyList,
+    links: linkList,
+    scripts: scriptList,
+    tags: tagList
+  };
 }
 
 HtmlWebpackDeployPlugin.prototype.apply = function (compiler) {
-  let { copy, tagsPassthroughOptions, links, scripts } = this.options;
+  let { copy, links, scripts, tags } = this.options;
   if (compiler.options.mode === 'development') {
     const applyDevPath = tag => {
-      if (isDefined(tag.devPath)) {
-        const { useCdn } = this.options;
-        let localUseCdn = useCdn;
-        if (isDefined(tag.packageDefinition) && isDefined(tag.packageDefinition.useCdn)) {
-          localUseCdn = tag.packageDefinition.useCdn;
-        }
-        if (isDefined(tag.useCdn)) {
-          localUseCdn = tag.useCdn;
-        }
-        if (!localUseCdn) {
-          tag = {
-            ...tag,
-            path: tag.devPath
-          };
-        }
+      if (isDefined(tag.devPath) && !tag.useCdn) {
+        tag = {
+          ...tag,
+          path: tag.devPath
+        };
       }
       return tag;
     };
 
     links = links.map(applyDevPath);
     scripts = scripts.map(applyDevPath);
+    tags = tags.map(applyDevPath);
   }
   new CopyWebpackPlugin(copy).apply(compiler);
-  new HtmlWebpackTagsPlugin({ ...tagsPassthroughOptions, links, scripts }).apply(compiler);
+  new HtmlWebpackTagsPlugin({ links, scripts, tags }).apply(compiler);
 };
 
 module.exports = HtmlWebpackDeployPlugin;

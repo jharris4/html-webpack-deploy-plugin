@@ -60,7 +60,7 @@ describe('option validation', () => {
         return new HtmlWebpackDeployPlugin({ publicPath: 123 });
       };
 
-      expect(theFunction).toThrowError(/(options should specify a publicPath that is either a boolean or a string)/);
+      expect(theFunction).toThrowError(/(options.publicPath should be a boolean or a string or a function that returns a string)/);
       done();
     });
 
@@ -78,7 +78,7 @@ describe('option validation', () => {
         return new HtmlWebpackDeployPlugin({ addPublicPath: 123 });
       };
 
-      expect(theFunction).toThrowError(/(options.addPublicPath should be a function)/);
+      expect(theFunction).toThrowError(/(options.addPublicPath should be a function that returns a string)/);
       done();
     });
 
@@ -103,23 +103,23 @@ describe('option validation', () => {
 
   describe('options.hash', () => {
     it('should throw an error if the hash option is not a boolean or function', done => {
-      const nonBooleanCheck = [123, 'not a boolean', /regex/, [], {}];
+      const nonBooleanCheck = [123, { 'not a boolean': true }, /regex/, [], {}];
 
       nonBooleanCheck.forEach(val => {
         const theCheck = () => {
           return new HtmlWebpackDeployPlugin({ append: true, publicPath: true, hash: val });
         };
-        expect(theCheck).toThrowError(/(options.hash should be a boolean or a function)/);
+        expect(theCheck).toThrowError(/(options.hash should be a boolean or a string or a function that returns a string)/);
       });
       done();
     });
 
-    it('should throw an error if the hash is a string', done => {
+    it('should not throw an error if the hash is a string', done => {
       const theFunction = () => {
         return new HtmlWebpackDeployPlugin({ hash: 'my-hash' });
       };
 
-      expect(theFunction).toThrowError(/(options.hash should be a boolean or a function)/);
+      expect(theFunction).not.toThrowError();
       done();
     });
 
@@ -137,7 +137,7 @@ describe('option validation', () => {
         return new HtmlWebpackDeployPlugin({ addHash: 123 });
       };
 
-      expect(theFunction).toThrowError(/(options.addHash should be a function)/);
+      expect(theFunction).toThrowError(/(options.addHash should be a function that returns a string)/);
       done();
     });
 
@@ -180,11 +180,11 @@ describe('option validation', () => {
       done();
     });
 
-    it('should throw an error if the assets is an empty object', done => {
+    it('should not throw an error if the assets is an empty object', done => {
       const theFunction = () => {
         return new HtmlWebpackDeployPlugin({ assets: {} });
       };
-      expect(theFunction).toThrowError(/(ptions.assets should be an object with a copy, links, or scripts property)/);
+      expect(theFunction).not.toThrowError();
       done();
     });
 
@@ -202,7 +202,7 @@ describe('option validation', () => {
       const theFunction = () => {
         return new HtmlWebpackDeployPlugin({ assets: { copy: '123' } });
       };
-      expect(theFunction).toThrowError(/(options.assets.copy should be an array or object)/);
+      expect(theFunction).toThrowError(/(options.assets.copy should be an object or array of objects)/);
       done();
     });
 
@@ -237,7 +237,7 @@ describe('option validation', () => {
       const theFunction = () => {
         return new HtmlWebpackDeployPlugin({ assets: { scripts: { path: 'a-path', devPath: 123 } } });
       };
-      expect(theFunction).toThrowError(/(options.assets.scripts object devPath should be a string)/);
+      expect(theFunction).toThrowError(/(options.assets.scripts.devPath should be a string)/);
       done();
     });
 
@@ -253,7 +253,7 @@ describe('option validation', () => {
       const theFunction = () => {
         return new HtmlWebpackDeployPlugin({ assets: { links: { path: 'a-path', devPath: 123 } } });
       };
-      expect(theFunction).toThrowError(/(options.assets.links object devPath should be a string)/);
+      expect(theFunction).toThrowError(/(options.assets.links.devPath should be a string)/);
       done();
     });
 
@@ -302,11 +302,11 @@ describe('option validation', () => {
       done();
     });
 
-    it('should throw an error if there is an empty object package', done => {
+    it('should not throw an error if there is an empty object package', done => {
       const theFunction = () => {
         return new HtmlWebpackDeployPlugin({ packages: { 'the-package': {} } });
       };
-      expect(theFunction).toThrowError(/(options.packages.the-package should be an object with a copy, links, or scripts property)/);
+      expect(theFunction).not.toThrowError();
       done();
     });
 
@@ -322,7 +322,7 @@ describe('option validation', () => {
       const theFunction = () => {
         return new HtmlWebpackDeployPlugin({ packages: { 'the-package': { copy: '123' } } });
       };
-      expect(theFunction).toThrowError(/(options.packages.the-package.copy should be an array or object)/);
+      expect(theFunction).toThrowError(/(options.packages.the-package.copy should be an object or array of objects)/);
       done();
     });
 
@@ -453,7 +453,7 @@ describe('option validation', () => {
       const theFunction = () => {
         return new HtmlWebpackDeployPlugin({ packages: { 'the-package': { scripts: { path: 'a-path', cdnPath: 123 } } } });
       };
-      expect(theFunction).toThrowError(/(options.packages.the-package.scripts object cdnPath should be a string)/);
+      expect(theFunction).toThrowError(/(options.packages.the-package.scripts.cdnPath should be a string)/);
       done();
     });
 
@@ -469,7 +469,7 @@ describe('option validation', () => {
       const theFunction = () => {
         return new HtmlWebpackDeployPlugin({ packages: { 'the-package': { links: { path: 'a-path', cdnPath: 123 } } } });
       };
-      expect(theFunction).toThrowError(/(options.packages.the-package.links object cdnPath should be a string)/);
+      expect(theFunction).toThrowError(/(options.packages.the-package.links.cdnPath should be a string)/);
       done();
     });
 
@@ -485,7 +485,7 @@ describe('option validation', () => {
       const theFunction = () => {
         return new HtmlWebpackDeployPlugin({ packages: { 'the-package': { scripts: { path: 'a-path', devPath: 123 } } } });
       };
-      expect(theFunction).toThrowError(/(options.packages.the-package.scripts object devPath should be a string)/);
+      expect(theFunction).toThrowError(/(options.packages.the-package.scripts.devPath should be a string)/);
       done();
     });
 
@@ -501,7 +501,7 @@ describe('option validation', () => {
       const theFunction = () => {
         return new HtmlWebpackDeployPlugin({ packages: { 'the-package': { links: { path: 'a-path', devPath: 123 } } } });
       };
-      expect(theFunction).toThrowError(/(options.packages.the-package.links object devPath should be a string)/);
+      expect(theFunction).toThrowError(/(options.packages.the-package.links.devPath should be a string)/);
       done();
     });
 
@@ -606,9 +606,18 @@ describe('option validation', () => {
   });
 });
 
+/*
+ * SAMPLE PARAMETERS:
+ * ['assets', 'links']
+ * ['assets', 'scripts']
+ * ['packages', 'bootstrap', 'links']
+ * ['packages', 'bootstrap', 'scripts']
+*/
 function runTestsForOption (optionNamePath) {
-  const optionName = optionNamePath.join('.');
-  const isScript = optionNamePath[optionNamePath.length - 1] === 'scripts';
+  const optionName = optionNamePath[optionNamePath.length - 1];
+  const isScript = optionName === 'scripts';
+
+  const optionPath = optionNamePath.join('.');
 
   function createPlugin (value, pluginOptionsRoot = {}) {
     let pluginOptions = pluginOptionsRoot;
@@ -620,35 +629,35 @@ function runTestsForOption (optionNamePath) {
     return new HtmlWebpackDeployPlugin(pluginOptionsRoot);
   }
 
-  describe(`options.${optionName}`, () => {
-    it(`should throw an error if the ${optionName} are not an array or string or object`, done => {
+  describe(`${optionPath}`, () => {
+    it(`should throw an error if the ${optionPath} are not an array or string or object`, done => {
       const theFunction = () => {
         return createPlugin(123);
       };
 
-      expect(theFunction).toThrowError(new RegExp(`(options.${optionName} should be a string, object, or array)`));
+      expect(theFunction).toThrowError(new RegExp(`(options.${optionPath} should be a string, object, or array)`));
       done();
     });
 
-    it(`should throw an error if the ${optionName} contains objects and a boolean`, done => {
+    it(`should throw an error if the ${optionPath} contains objects and a boolean`, done => {
       const theFunction = () => {
         return createPlugin([{ path: 'a' }, false, { path: 'b' }]);
       };
 
-      expect(theFunction).toThrowError(new RegExp(`(options.${optionName} items must be an object or string)`));
+      expect(theFunction).toThrowError(new RegExp(`(options.${optionPath} items must be an object or string)`));
       done();
     });
 
-    it(`should throw an error if the ${optionName} contains string and a boolean`, done => {
+    it(`should throw an error if the ${optionPath} contains string and a boolean`, done => {
       const theFunction = () => {
         return createPlugin([`foo.js`, true, `bar.css`]);
       };
 
-      expect(theFunction).toThrowError(new RegExp(`(options.${optionName} items must be an object or string)`));
+      expect(theFunction).toThrowError(new RegExp(`(options.${optionPath} items must be an object or string)`));
       done();
     });
 
-    it(`should not throw an error if the ${optionName} contains strings and objects`, done => {
+    it(`should not throw an error if the ${optionPath} contains strings and objects`, done => {
       const theFunction = () => {
         return createPlugin([`foo.js`, { path: `file.js` }, `bar.css`]);
       };
@@ -658,26 +667,26 @@ function runTestsForOption (optionNamePath) {
     });
   });
 
-  describe(`options.${optionName} path`, () => {
-    it(`should throw an error if the ${optionName} contains an element that is an empty object`, done => {
+  describe(`options.${optionPath} path`, () => {
+    it(`should throw an error if the ${optionPath} contains an element that is an empty object`, done => {
       const theFunction = () => {
         return createPlugin([{ path: 'a' }, {}, { path: 'b' }]);
       };
 
-      expect(theFunction).toThrowError(new RegExp(`(options.${optionName} object must have a string path property)`));
+      expect(theFunction).toThrowError(new RegExp(`(options.${optionPath} object must have a string path property)`));
       done();
     });
 
-    it(`should throw an error if the ${optionName} contains an element that is an object with a non string path`, done => {
+    it(`should throw an error if the ${optionPath} contains an element that is an object with a non string path`, done => {
       const theFunction = () => {
         return createPlugin([{ path: 'a' }, { path: 123, type: 'js' }, { path: 'c.css' }]);
       };
 
-      expect(theFunction).toThrowError(new RegExp(`(options.${optionName} object must have a string path property)`));
+      expect(theFunction).toThrowError(new RegExp(`(options.${optionPath} object must have a string path property)`));
       done();
     });
 
-    it(`should not throw an error if the ${optionName} contains elements that are all objects that have a path`, done => {
+    it(`should not throw an error if the ${optionPath} contains elements that are all objects that have a path`, done => {
       const theFunction = () => {
         return createPlugin([{ path: 'a' }, { path: 'b' }, { path: 'c' }]);
       };
@@ -687,17 +696,17 @@ function runTestsForOption (optionNamePath) {
     });
   });
 
-  describe(`options.${optionName} append`, () => {
-    it(`should throw an error if the ${optionName} contains an element that is an object with a non boolean append`, done => {
+  describe(`options.${optionPath} append`, () => {
+    it(`should throw an error if the ${optionPath} contains an element that is an object with a non boolean append`, done => {
       const theFunction = () => {
         return createPlugin([{ path: 'a' }, { path: 'b', append: 123 }, { path: 'c' }]);
       };
 
-      expect(theFunction).toThrowError(new RegExp(`(options.${optionName} object append should be a boolean)`));
+      expect(theFunction).toThrowError(new RegExp(`(options.${optionPath}.append should be a boolean)`));
       done();
     });
 
-    it(`should not throw an error if the ${optionName} contains elements that are all objects that have a boolean append`, done => {
+    it(`should not throw an error if the ${optionPath} contains elements that are all objects that have a boolean append`, done => {
       const theFunction = () => {
         return createPlugin([{ path: 'a', append: true }, { path: 'b', append: false }, { path: 'c', append: true }]);
       };
@@ -707,44 +716,44 @@ function runTestsForOption (optionNamePath) {
     });
   });
 
-  describe(`options.${optionName} publicPath`, () => {
-    it(`should throw an error if the ${optionName} contains an element that is an object with publicPath set to string`, done => {
+  describe(`options.${optionPath} publicPath`, () => {
+    it(`should not throw an error if the ${optionPath} contains an element that is an object with publicPath set to string`, done => {
       const theFunction = () => {
         return createPlugin([{ path: 'a' }, { path: 'b', publicPath: 'string' }, { path: 'c' }]);
       };
 
-      expect(theFunction).toThrowError(new RegExp(`(options.${optionName} object publicPath should be a boolean or function)`));
+      expect(theFunction).not.toThrowError();
       done();
     });
 
-    it(`should throw an error if the ${optionName} contains an element that is an object with publicPath set to object`, done => {
+    it(`should throw an error if the ${optionPath} contains an element that is an object with publicPath set to object`, done => {
       const theFunction = () => {
         return createPlugin([{ path: 'a' }, { path: 'b', publicPath: {} }, { path: 'c' }]);
       };
 
-      expect(theFunction).toThrowError(new RegExp(`(options.${optionName} object publicPath should be a boolean or function)`));
+      expect(theFunction).toThrowError(new RegExp(`(options.${optionPath}.publicPath should be a boolean or a string or a function that returns a string)`));
       done();
     });
 
-    it(`should throw an error if the ${optionName} contains an element that is an object with publicPath set to number`, done => {
+    it(`should throw an error if the ${optionPath} contains an element that is an object with publicPath set to number`, done => {
       const theFunction = () => {
         return createPlugin([{ path: 'a' }, { path: 'b', publicPath: 0 }, { path: 'c' }]);
       };
 
-      expect(theFunction).toThrowError(new RegExp(`(options.${optionName} object publicPath should be a boolean or function)`));
+      expect(theFunction).toThrowError(new RegExp(`(options.${optionPath}.publicPath should be a boolean or a string or a function that returns a string)`));
       done();
     });
 
-    it(`should throw an error if the ${optionName} contains an element that is an object with publicPath set to array`, done => {
+    it(`should throw an error if the ${optionPath} contains an element that is an object with publicPath set to array`, done => {
       const theFunction = () => {
         return createPlugin([{ path: 'a' }, { path: 'b', publicPath: [] }, { path: 'c' }]);
       };
 
-      expect(theFunction).toThrowError(new RegExp(`(options.${optionName} object publicPath should be a boolean or function)`));
+      expect(theFunction).toThrowError(new RegExp(`(options.${optionPath}.publicPath should be a boolean or a string or a function that returns a string)`));
       done();
     });
 
-    it(`should not throw an error if the ${optionName} contains an element that is an object with publicPath set to true`, done => {
+    it(`should not throw an error if the ${optionPath} contains an element that is an object with publicPath set to true`, done => {
       const theFunction = () => {
         return createPlugin([{ path: 'a', publicPath: true }, { path: 'b' }, { path: 'c' }]);
       };
@@ -754,44 +763,44 @@ function runTestsForOption (optionNamePath) {
     });
   });
 
-  describe(`options.${optionName} attributes`, () => {
-    it(`should throw an error if the ${optionName} contains an element that is an object with non object string attributes`, done => {
+  describe(`options.${optionPath} attributes`, () => {
+    it(`should throw an error if the ${optionPath} contains an element that is an object with non object string attributes`, done => {
       const theFunction = () => {
         return createPlugin([{ path: 'a' }, { path: 'b', attributes: '' }, { path: 'c' }]);
       };
 
-      expect(theFunction).toThrowError(new RegExp(`(options.${optionName} object should have an object attributes property)`));
+      expect(theFunction).toThrowError(new RegExp(`(options.${optionPath} object should have an object attributes property)`));
       done();
     });
 
-    it(`should throw an error if the ${optionName} contains an element that is an object with array attributes`, done => {
+    it(`should throw an error if the ${optionPath} contains an element that is an object with array attributes`, done => {
       const theFunction = () => {
         return createPlugin([{ path: 'a' }, { path: 'b', attributes: [] }, { path: 'c' }]);
       };
 
-      expect(theFunction).toThrowError(new RegExp(`(options.${optionName} object should have an object attributes property)`));
+      expect(theFunction).toThrowError(new RegExp(`(options.${optionPath} object should have an object attributes property)`));
       done();
     });
 
-    it(`should throw an error if the ${optionName} contains an element that is an object with number attributes`, done => {
+    it(`should throw an error if the ${optionPath} contains an element that is an object with number attributes`, done => {
       const theFunction = () => {
         return createPlugin([{ path: 'a' }, { path: 'b', attributes: 0 }, { path: 'c' }]);
       };
 
-      expect(theFunction).toThrowError(new RegExp(`(options.${optionName} object should have an object attributes property)`));
+      expect(theFunction).toThrowError(new RegExp(`(options.${optionPath} object should have an object attributes property)`));
       done();
     });
 
-    it(`should throw an error if the ${optionName} contains an element that is an object with boolean attributes`, done => {
+    it(`should throw an error if the ${optionPath} contains an element that is an object with boolean attributes`, done => {
       const theFunction = () => {
         return createPlugin([{ path: 'a' }, { path: 'b', attributes: true }, { path: 'c' }]);
       };
 
-      expect(theFunction).toThrowError(new RegExp(`(options.${optionName} object should have an object attributes property)`));
+      expect(theFunction).toThrowError(new RegExp(`(options.${optionPath} object should have an object attributes property)`));
       done();
     });
 
-    it(`should not throw an error if the ${optionName} contains an element that is an object with empty object attributes`, done => {
+    it(`should not throw an error if the ${optionPath} contains an element that is an object with empty object attributes`, done => {
       const theFunction = () => {
         return createPlugin([{ path: 'a' }, { path: 'b', attributes: {} }, { path: 'c' }]);
       };
@@ -801,77 +810,77 @@ function runTestsForOption (optionNamePath) {
     });
   });
 
-  describe(`options.${optionName} glob`, () => {
-    it(`should throw an error if any of the ${optionName} options are objects with a glob property that is not a string`, done => {
+  describe(`options.${optionPath} glob`, () => {
+    it(`should throw an error if any of the ${optionPath} options are objects with a glob property that is not a string`, done => {
       const theFunction = () => {
         return createPlugin(['foo', { path: 'a', glob: 123, type: 'js' }, 'bar']);
       };
 
-      expect(theFunction).toThrowError(new RegExp(`(options.${optionName} object should have a string glob property)`));
+      expect(theFunction).toThrowError(new RegExp(`(options.${optionPath} object should have a string glob property)`));
       done();
     });
 
-    it(`should throw an error if any of the ${optionName} options are objects with a globPath property that is not a string`, done => {
+    it(`should throw an error if any of the ${optionPath} options are objects with a globPath property that is not a string`, done => {
       const theFunction = () => {
         return createPlugin(['foo', { path: 'a', globPath: 123, type: 'js' }, 'bar']);
       };
 
-      expect(theFunction).toThrowError(new RegExp(`(options.${optionName} object should have a string glob property)`));
+      expect(theFunction).toThrowError(new RegExp(`(options.${optionPath} object should have a string glob property)`));
       done();
     });
 
-    it(`should throw an error if any of the ${optionName} options are objects with glob specified but globPath missing`, done => {
+    it(`should throw an error if any of the ${optionPath} options are objects with glob specified but globPath missing`, done => {
       const theFunction = () => {
         return createPlugin(['foo', { path: 'a-path', glob: 'withoutExtensions*' }, 'bar'], { append: false });
       };
-      expect(theFunction).toThrowError(new RegExp(`(options.${optionName} object should have a string globPath property)`));
+      expect(theFunction).toThrowError(new RegExp(`(options.${optionPath} object should have a string globPath property)`));
       done();
     });
 
-    it(`should throw an error if any of the ${optionName} options are objects with globPath specified but glob missing`, done => {
+    it(`should throw an error if any of the ${optionPath} options are objects with globPath specified but glob missing`, done => {
       const theFunction = () => {
         return createPlugin(['foo', { path: 'a-path', globPath: 'withoutExtensions*' }, 'bar'], { append: false });
       };
-      expect(theFunction).toThrowError(new RegExp(`(options.${optionName} object should have a string glob property)`));
+      expect(theFunction).toThrowError(new RegExp(`(options.${optionPath} object should have a string glob property)`));
       done();
     });
 
-    it(`should throw an error if any of the ${optionName} options are objects with glob that does not match any files`, done => {
+    it(`should throw an error if any of the ${optionPath} options are objects with glob that does not match any files`, done => {
       const theFunction = () => {
         return createPlugin([{ path: 'assets/', globPath: FIXTURES_PATH, glob: 'nonexistant*.js' }, { path: 'assets/', globPath: FIXTURES_PATH, glob: 'nonexistant*.css' }], { append: true });
       };
 
-      expect(theFunction).toThrowError(new RegExp(`(options.${optionName} object glob found no files)`));
+      expect(theFunction).toThrowError(new RegExp(`(options.${optionPath} object glob found no files)`));
       done();
     });
   });
 
-  describe(`options.${optionName} sourcePath`, () => {
-    it(`should throw an error if any of the ${optionName} options are objects with an sourcePath property that is not a string`, done => {
+  describe(`options.${optionPath} sourcePath`, () => {
+    it(`should throw an error if any of the ${optionPath} options are objects with an sourcePath property that is not a string`, done => {
       const theFunction = () => {
         return createPlugin(['foo', { path: 'a', sourcePath: 123, type: 'js' }, 'bar']);
       };
 
-      expect(theFunction).toThrowError(new RegExp(`(options.${optionName} object should have a string sourcePath property)`));
+      expect(theFunction).toThrowError(new RegExp(`(options.${optionPath} object should have a string sourcePath property)`));
       done();
     });
   });
 
-  describe(`options.${optionName} external`, () => {
-    it(`should throw an error if any of the ${optionName} options are objects with external property that is not an object`, done => {
+  describe(`options.${optionPath} external`, () => {
+    it(`should throw an error if any of the ${optionPath} options are objects with external property that is not an object`, done => {
       const theFunction = () => {
         return createPlugin(['foo', { path: 'a', external: 123 }, 'bar']);
       };
       if (isScript) {
-        expect(theFunction).toThrowError(new RegExp(`(options.${optionName} external should be an object)`));
+        expect(theFunction).toThrowError(new RegExp(`(options.${optionPath}.external should be an object)`));
       } else {
-        expect(theFunction).toThrowError(new RegExp(`(options.${optionName} external should not be used on non script tags)`));
+        expect(theFunction).toThrowError(new RegExp(`(options.${optionPath}.external should not be used on non script tags)`));
       }
       done();
     });
 
     if (isScript) {
-      it(`should not throw an error if any of the ${optionName} options are objects with valid external objects`, done => {
+      it(`should not throw an error if any of the ${optionPath} options are objects with valid external objects`, done => {
         const theFunction = () => {
           return createPlugin(['foo', { path: 'a', external: { packageName: 'a', variableName: 'A' } }, 'bar']);
         };
@@ -879,27 +888,27 @@ function runTestsForOption (optionNamePath) {
         done();
       });
 
-      it(`should throw an error if any of the ${optionName} options are objects with external that is an empty object`, done => {
+      it(`should throw an error if any of the ${optionPath} options are objects with external that is an empty object`, done => {
         const theFunction = () => {
           return createPlugin(['foo', { path: 'a', external: { } }, 'bar']);
         };
-        expect(theFunction).toThrowError(new RegExp(`(options.${optionName} external should have a string packageName and variableName property)`));
+        expect(theFunction).toThrowError(new RegExp(`(options.${optionPath}.external should have a string packageName and variableName property)`));
         done();
       });
 
-      it(`should throw an error if any of the ${optionName} options are objects with external that has packageName but not variableName string properties`, done => {
+      it(`should throw an error if any of the ${optionPath} options are objects with external that has packageName but not variableName string properties`, done => {
         const theFunction = () => {
           return createPlugin(['foo', { path: 'a', external: { packageName: 'a' } }, 'bar']);
         };
-        expect(theFunction).toThrowError(new RegExp(`(options.${optionName} external should have a string variableName property)`));
+        expect(theFunction).toThrowError(new RegExp(`(options.${optionPath}.external should have a string variableName property)`));
         done();
       });
 
-      it(`should throw an error if any of the ${optionName} options are objects with external that has variableName but not packageName string properties`, done => {
+      it(`should throw an error if any of the ${optionPath} options are objects with external that has variableName but not packageName string properties`, done => {
         const theFunction = () => {
           return createPlugin(['foo', { path: 'a', external: { variableName: 'A' } }, 'bar']);
         };
-        expect(theFunction).toThrowError(new RegExp(`(options.${optionName} external should have a string packageName property)`));
+        expect(theFunction).toThrowError(new RegExp(`(options.${optionPath}.external should have a string packageName property)`));
         done();
       });
     }
