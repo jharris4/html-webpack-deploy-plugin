@@ -395,6 +395,129 @@ describe('end to end', () => {
         });
       });
     });
+
+    describe('hash', () => {
+      describe('root level', () => {
+        const baseOptions = {
+          assets: {
+            links: 'abc.css',
+            scripts: [{ path: 'abc.js' }]
+          },
+          packages: {
+            bootstrap: {
+              links: ['def.css'],
+              scripts: { path: 'def.js' }
+            }
+          }
+        };
+        const testOptions = [
+          { ...baseOptions, hash: false },
+          { ...baseOptions, hash: 'the-hash' }
+        ];
+        const addedLinkCount = 2;
+        const addedScriptCount = 2;
+        const expectedLinkCount = 1 + addedLinkCount;
+        const expetedScriptCount = 2 + addedScriptCount;
+
+        testOptions.forEach(options => {
+          const suffix = options.hash ? ('?' + options.hash) : '';
+          it(`applies publicPath ${options.publicPath}`, done => {
+            webpack(createWebpackConfig({ options }), (err, result) => {
+              expect(err).toBeFalsy();
+              expect(JSON.stringify(result.compilation.errors)).toBe('[]');
+
+              cheerioLoadTags(OUPUT_HTML_FILE, ({ links, scripts }) => {
+                expect(links.length).toBe(expectedLinkCount);
+                expect(scripts.length).toBe(expetedScriptCount);
+                expect(links).toContainTag({ tagName: 'link', attributes: { 'href': 'style.css', 'rel': 'stylesheet' } });
+                expect(links[1]).toBeTag({ tagName: 'link', attributes: { 'href': 'assets/abc.css' + suffix, 'rel': 'stylesheet' } });
+                expect(links[2]).toBeTag({ tagName: 'link', attributes: { 'href': 'packages/bootstrap-4.3.1/def.css' + suffix, 'rel': 'stylesheet' } });
+                expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'app.js', 'type': 'text/javascript' } });
+                expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'style.js', 'type': 'text/javascript' } });
+                expect(scripts[2]).toBeTag({ tagName: 'script', attributes: { 'src': 'assets/abc.js' + suffix, 'type': 'text/javascript' } });
+                expect(scripts[3]).toBeTag({ tagName: 'script', attributes: { 'src': 'packages/bootstrap-4.3.1/def.js' + suffix, 'type': 'text/javascript' } });
+
+                done();
+              });
+            });
+          });
+        });
+      });
+
+      describe('assets level', () => {
+        const baseAssets = {
+          links: 'abc.css',
+          scripts: [{ path: 'abc.js' }]
+        };
+        const testOptions = [
+          { assets: { ...baseAssets, hash: 'the-hash' }, hash: false },
+          { assets: { ...baseAssets, hash: false }, hash: 'the-hash' }
+        ];
+        const addedLinkCount = 1;
+        const addedScriptCount = 1;
+        const expectedLinkCount = 1 + addedLinkCount;
+        const expetedScriptCount = 2 + addedScriptCount;
+
+        testOptions.forEach(options => {
+          const suffix = options.assets.hash ? ('?' + options.assets.hash) : '';
+          it(`applies assets.append ${options.assets.append}`, done => {
+            webpack(createWebpackConfig({ options }), (err, result) => {
+              expect(err).toBeFalsy();
+              expect(JSON.stringify(result.compilation.errors)).toBe('[]');
+
+              cheerioLoadTags(OUPUT_HTML_FILE, ({ links, scripts }) => {
+                expect(links.length).toBe(expectedLinkCount);
+                expect(scripts.length).toBe(expetedScriptCount);
+                expect(links).toContainTag({ tagName: 'link', attributes: { 'href': 'style.css', 'rel': 'stylesheet' } });
+                expect(links[1]).toBeTag({ tagName: 'link', attributes: { 'href': 'assets/abc.css' + suffix, 'rel': 'stylesheet' } });
+                expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'app.js', 'type': 'text/javascript' } });
+                expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'style.js', 'type': 'text/javascript' } });
+                expect(scripts[2]).toBeTag({ tagName: 'script', attributes: { 'src': 'assets/abc.js' + suffix, 'type': 'text/javascript' } });
+
+                done();
+              });
+            });
+          });
+        });
+      });
+
+      describe('packages level', () => {
+        const basePackage = {
+          links: 'abc.css',
+          scripts: [{ path: 'abc.js' }]
+        };
+        const testOptions = [
+          { packages: { 'bootstrap': { ...basePackage, hash: 'the-hash' } }, hash: false },
+          { packages: { 'bootstrap': { ...basePackage, hash: false } }, hash: 'the-hash' }
+        ];
+        const addedLinkCount = 1;
+        const addedScriptCount = 1;
+        const expectedLinkCount = 1 + addedLinkCount;
+        const expetedScriptCount = 2 + addedScriptCount;
+
+        testOptions.forEach(options => {
+          const suffix = options.packages.bootstrap.hash ? ('?' + options.packages.bootstrap.hash) : '';
+          it(`applies assets.append ${options.packages.bootstrap.append}`, done => {
+            webpack(createWebpackConfig({ options }), (err, result) => {
+              expect(err).toBeFalsy();
+              expect(JSON.stringify(result.compilation.errors)).toBe('[]');
+
+              cheerioLoadTags(OUPUT_HTML_FILE, ({ links, scripts }) => {
+                expect(links.length).toBe(expectedLinkCount);
+                expect(scripts.length).toBe(expetedScriptCount);
+                expect(links).toContainTag({ tagName: 'link', attributes: { 'href': 'style.css', 'rel': 'stylesheet' } });
+                expect(links[1]).toBeTag({ tagName: 'link', attributes: { 'href': 'packages/bootstrap-4.3.1/abc.css' + suffix, 'rel': 'stylesheet' } });
+                expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'app.js', 'type': 'text/javascript' } });
+                expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'style.js', 'type': 'text/javascript' } });
+                expect(scripts[2]).toBeTag({ tagName: 'script', attributes: { 'src': 'packages/bootstrap-4.3.1/abc.js' + suffix, 'type': 'text/javascript' } });
+
+                done();
+              });
+            });
+          });
+        });
+      });
+    });
   });
 
   describe('packages', () => {
