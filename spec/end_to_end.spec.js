@@ -8,20 +8,31 @@ const cheerio = require('cheerio');
 require('jasmine-expect');
 const { addMatchers } = require('add-matchers');
 
-const matchersByName = {
-  toBeTag (tagProperties, actual) {
-    const node = actual.length > 0 ? actual[0] : actual;
-    if (!node || node.tagName !== tagProperties.tagName) {
-      return false;
-    }
-    if (tagProperties.attributes) {
-      const tagAttrs = tagProperties.attributes;
-      const nodeAttrs = node.attribs || {};
-      return !Object.keys(tagAttrs).some(tagAttr => tagAttrs[tagAttr] !== nodeAttrs[tagAttr]);
-    } else {
-      return true;
-    }
+const matcherToBeTag = (tagProperties, actual) => {
+  if (!actual) {
+    return false;
   }
+  const node = actual;
+  const nodeTagName = node.tagName || node.name;
+  if (!nodeTagName || nodeTagName !== tagProperties.tagName) {
+    return false;
+  }
+  if (tagProperties.attributes) {
+    const tagAttrs = tagProperties.attributes;
+    const nodeAttrs = node.attribs || {};
+    return !Object.keys(tagAttrs).some(tagAttr => tagAttrs[tagAttr] !== nodeAttrs[tagAttr]);
+  } else {
+    return true;
+  }
+};
+
+const matcherToContainTag = (tagProperties, actual) => {
+  return actual.some(tag => matcherToBeTag(tagProperties, tag));
+};
+
+const matchersByName = {
+  toBeTag: matcherToBeTag,
+  toContainTag: matcherToContainTag
 };
 
 addMatchers(matchersByName);
@@ -96,6 +107,23 @@ const createWebpackConfig = ({
   };
 };
 
+const cheerioLoadTags = (file, tagsCallback) => {
+  fs.readFile(file, 'utf8', (er, data) => {
+    expect(er).toBeFalsy();
+    const $ = cheerio.load(data);
+    const cheerioLinks = $('link');
+    const cheerioScripts = $('script');
+    const links = cheerioLinks.get().map((link, i) => ({ ...link, jasmineToString: $(link).toString }));
+    const scripts = cheerioScripts.get().map((script, i) => ({ ...script, jasmineToString: $(script).toString }));
+    links.jasmineToString = () => cheerioLinks.toString();
+    scripts.jasmineToString = () => cheerioScripts.toString();
+    tagsCallback({
+      scripts,
+      links
+    });
+  });
+};
+
 describe('end to end', () => {
   beforeEach(done => {
     rimraf(OUTPUT_DIR, done);
@@ -105,15 +133,86 @@ describe('end to end', () => {
     webpack(createWebpackConfig(), (err, result) => {
       expect(err).toBeFalsy();
       expect(JSON.stringify(result.compilation.errors)).toBe('[]');
-      fs.readFile(OUPUT_HTML_FILE, 'utf8', (er, data) => {
-        expect(er).toBeFalsy();
-        const $ = cheerio.load(data);
-        expect($('script').length).toBe(2);
-        expect($('link').length).toBe(1);
-        expect($('script[src="app.js"]')).toBeTag({ tagName: 'script', attributes: { 'src': 'app.js', 'type': 'text/javascript' } });
-        expect($('script[src="style.js"]')).toBeTag({ tagName: 'script', attributes: { 'src': 'style.js', 'type': 'text/javascript' } });
-        expect($('link[href="style.css"]')).toBeTag({ tagName: 'link', attributes: { 'href': 'style.css', 'rel': 'stylesheet' } });
+      cheerioLoadTags(OUPUT_HTML_FILE, ({ links, scripts }) => {
+        expect(links.length).toBe(1);
+        expect(scripts.length).toBe(2);
+        expect(links).toContainTag({ tagName: 'link', attributes: { 'href': 'style.css', 'rel': 'stylesheet' } });
+        expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'app.js', 'type': 'text/javascript' } });
+        expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'style.js', 'type': 'text/javascript' } });
+
         done();
+      });
+    });
+  });
+
+  describe('tags plugin passthrough options', () => {
+    describe('append', () => {
+      xit('applies append from the root level', done => {
+        const baseOptions = {
+          assets: {
+            links: 'abc.css',
+            scripts: [{ path: 'abc.js' }]
+          },
+          packages: {
+            bootstrap: {
+              links: ['def.css'],
+              scripts: { path: 'def.js' }
+            }
+          }
+        };
+        const testOptions = [
+          { ...baseOptions, append: false },
+          { ...baseOptions, append: true }
+        ];
+        const expectedLinkCount = 2;
+        const expetedScriptCount = 3;
+        testOptions.forEach(options => {
+          // const expectedLinkIndex = options.append ? expectedLinkCount - 1 : 0;
+          // const expectedScriptIndex = options.append ? expetedScriptCount - 1 : 0;
+          webpack(createWebpackConfig({ options }), (err, result) => {
+            expect(err).toBeFalsy();
+            expect(JSON.stringify(result.compilation.errors)).toBe('[]');
+
+            cheerioLoadTags(OUPUT_HTML_FILE, ({ links, scripts }) => {
+              expect(links.length).toBe(expectedLinkCount);
+              expect(scripts.length).toBe(expetedScriptCount);
+              expect(links).toContainTag({ tagName: 'link', attributes: { 'href': 'style.css', 'rel': 'stylesheet' } });
+              expect(links[1]).toBeTag({ tagName: 'link', attributes: { 'href': 'assets/abc.css', 'rel': 'stylesheet' } });
+              expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'app.js', 'type': 'text/javascript' } });
+              expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'style.js', 'type': 'text/javascript' } });
+              expect(scripts[2]).toBeTag({ tagName: 'script', attributes: { 'src': 'assets/abc.js', 'type': 'text/javascript' } });
+
+              done();
+            });
+          });
+        });
+      });
+
+      it('applies append from the root level', done => {
+        webpack(createWebpackConfig({
+          options: {
+            append: false,
+            assets: {
+              links: 'abc.css',
+              scripts: 'abc.js'
+            }
+          }
+        }), (err, result) => {
+          expect(err).toBeFalsy();
+          expect(JSON.stringify(result.compilation.errors)).toBe('[]');
+
+          cheerioLoadTags(OUPUT_HTML_FILE, ({ links, scripts }) => {
+            expect(links.length).toBe(2);
+            expect(scripts.length).toBe(3);
+            expect(links).toContainTag({ tagName: 'link', attributes: { 'href': 'style.css', 'rel': 'stylesheet' } });
+            expect(links[0]).toBeTag({ tagName: 'link', attributes: { 'href': 'assets/abc.css', 'rel': 'stylesheet' } });
+            expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'app.js', 'type': 'text/javascript' } });
+            expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'style.js', 'type': 'text/javascript' } });
+            expect(scripts[0]).toBeTag({ tagName: 'script', attributes: { 'src': 'assets/abc.js', 'type': 'text/javascript' } });
+
+            done();
+          });
+        });
       });
     });
   });
@@ -136,16 +235,15 @@ describe('end to end', () => {
       }), (err, result) => {
         expect(err).toBeFalsy();
         expect(JSON.stringify(result.compilation.errors)).toBe('[]');
-        fs.readFile(OUPUT_HTML_FILE, 'utf8', (er, data) => {
-          expect(areEqualDirectories('../node_modules/bootstrap/dist/css', `${OUTPUT_DIR}/packages/bootstrap-4.3.1/css`)).toBe(true);
-          expect(er).toBeFalsy();
-          const $ = cheerio.load(data);
-          expect($('script').length).toBe(2);
-          expect($('link').length).toBe(2);
-          expect($('script[src="app.js"]')).toBeTag({ tagName: 'script', attributes: { 'src': 'app.js', 'type': 'text/javascript' } });
-          expect($('script[src="style.js"]')).toBeTag({ tagName: 'script', attributes: { 'src': 'style.js', 'type': 'text/javascript' } });
-          expect($('link[href="style.css"]')).toBeTag({ tagName: 'link', attributes: { 'href': 'style.css', 'rel': 'stylesheet' } });
-          expect($('link[href="packages/bootstrap-4.3.1/css/bootstrap.min.css"]')).toBeTag({ tagName: 'link', attributes: { 'href': 'packages/bootstrap-4.3.1/css/bootstrap.min.css', 'rel': 'stylesheet' } });
+        expect(areEqualDirectories('../node_modules/bootstrap/dist/css', `${OUTPUT_DIR}/packages/bootstrap-4.3.1/css`)).toBe(true);
+        cheerioLoadTags(OUPUT_HTML_FILE, ({ links, scripts }) => {
+          expect(links.length).toBe(2);
+          expect(scripts.length).toBe(2);
+          expect(links).toContainTag({ tagName: 'link', attributes: { 'href': 'style.css', 'rel': 'stylesheet' } });
+          expect(links[1]).toBeTag({ tagName: 'link', attributes: { 'href': 'packages/bootstrap-4.3.1/css/bootstrap.min.css', 'rel': 'stylesheet' } });
+          expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'app.js', 'type': 'text/javascript' } });
+          expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'style.js', 'type': 'text/javascript' } });
+
           done();
         });
       });
@@ -169,16 +267,15 @@ describe('end to end', () => {
       }), (err, result) => {
         expect(err).toBeFalsy();
         expect(JSON.stringify(result.compilation.errors)).toBe('[]');
-        fs.readFile(OUPUT_HTML_FILE, 'utf8', (er, data) => {
-          expect(areEqualDirectories('../node_modules/bootstrap/dist/css', `${OUTPUT_DIR}/my-packages/bootstrap-4.3.1/css`)).toBe(true);
-          expect(er).toBeFalsy();
-          const $ = cheerio.load(data);
-          expect($('script').length).toBe(2);
-          expect($('link').length).toBe(2);
-          expect($('script[src="app.js"]')).toBeTag({ tagName: 'script', attributes: { 'src': 'app.js', 'type': 'text/javascript' } });
-          expect($('script[src="style.js"]')).toBeTag({ tagName: 'script', attributes: { 'src': 'style.js', 'type': 'text/javascript' } });
-          expect($('link[href="style.css"]')).toBeTag({ tagName: 'link', attributes: { 'href': 'style.css', 'rel': 'stylesheet' } });
-          expect($('link[href="my-packages/bootstrap-4.3.1/css/bootstrap.min.css"]')).toBeTag({ tagName: 'link', attributes: { 'href': 'my-packages/bootstrap-4.3.1/css/bootstrap.min.css', 'rel': 'stylesheet' } });
+        expect(areEqualDirectories('../node_modules/bootstrap/dist/css', `${OUTPUT_DIR}/my-packages/bootstrap-4.3.1/css`)).toBe(true);
+        cheerioLoadTags(OUPUT_HTML_FILE, ({ links, scripts }) => {
+          expect(links.length).toBe(2);
+          expect(scripts.length).toBe(2);
+          expect(links).toContainTag({ tagName: 'link', attributes: { 'href': 'style.css', 'rel': 'stylesheet' } });
+          expect(links[1]).toBeTag({ tagName: 'link', attributes: { 'href': 'my-packages/bootstrap-4.3.1/css/bootstrap.min.css', 'rel': 'stylesheet' } });
+          expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'app.js', 'type': 'text/javascript' } });
+          expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'style.js', 'type': 'text/javascript' } });
+
           done();
         });
       });
@@ -207,18 +304,19 @@ describe('end to end', () => {
         expect(err).toBeFalsy();
         expect(JSON.stringify(result.compilation.errors)).toBe('[]');
         expect(JSON.stringify(result.compilation.options.externals)).toBe('{"bootstrap":"Bootstrap"}');
-        fs.readFile(OUPUT_HTML_FILE, 'utf8', (er, data) => {
-          expect(areEqualDirectories('../node_modules/bootstrap/dist/css', `${OUTPUT_DIR}/packages/bootstrap-4.3.1/css`)).toBe(true);
-          expect(areEqualDirectories('../node_modules/bootstrap/dist/js', `${OUTPUT_DIR}/packages/bootstrap-4.3.1/js`)).toBe(true);
-          expect(er).toBeFalsy();
-          const $ = cheerio.load(data);
-          expect($('script').length).toBe(3);
-          expect($('link').length).toBe(2);
-          expect($('script[src="app.js"]')).toBeTag({ tagName: 'script', attributes: { 'src': 'app.js', 'type': 'text/javascript' } });
-          expect($('script[src="style.js"]')).toBeTag({ tagName: 'script', attributes: { 'src': 'style.js', 'type': 'text/javascript' } });
-          expect($('link[href="style.css"]')).toBeTag({ tagName: 'link', attributes: { 'href': 'style.css', 'rel': 'stylesheet' } });
-          expect($('link[href="packages/bootstrap-4.3.1/css/bootstrap.min.css"]')).toBeTag({ tagName: 'link', attributes: { 'href': 'packages/bootstrap-4.3.1/css/bootstrap.min.css', 'rel': 'stylesheet' } });
-          expect($('script[src="packages/bootstrap-4.3.1/js/bootstrap.bundle.min.js"]')).toBeTag({ tagName: 'script', attributes: { 'src': 'packages/bootstrap-4.3.1/js/bootstrap.bundle.min.js' } });
+
+        expect(areEqualDirectories('../node_modules/bootstrap/dist/css', `${OUTPUT_DIR}/packages/bootstrap-4.3.1/css`)).toBe(true);
+        expect(areEqualDirectories('../node_modules/bootstrap/dist/js', `${OUTPUT_DIR}/packages/bootstrap-4.3.1/js`)).toBe(true);
+
+        cheerioLoadTags(OUPUT_HTML_FILE, ({ links, scripts }) => {
+          expect(links.length).toBe(2);
+          expect(scripts.length).toBe(3);
+          expect(links).toContainTag({ tagName: 'link', attributes: { 'href': 'style.css', 'rel': 'stylesheet' } });
+          expect(links[1]).toBeTag({ tagName: 'link', attributes: { 'href': 'packages/bootstrap-4.3.1/css/bootstrap.min.css', 'rel': 'stylesheet' } });
+          expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'app.js', 'type': 'text/javascript' } });
+          expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'style.js', 'type': 'text/javascript' } });
+          expect(scripts[2]).toBeTag({ tagName: 'script', attributes: { 'src': 'packages/bootstrap-4.3.1/js/bootstrap.bundle.min.js' } });
+
           done();
         });
       });
@@ -247,19 +345,19 @@ describe('end to end', () => {
       }), (err, result) => {
         expect(err).toBeFalsy();
         expect(JSON.stringify(result.compilation.errors)).toBe('[]');
+        expect(areEqualDirectories('../node_modules/bootstrap/dist/css', `${OUTPUT_DIR}/packages/bootstrap-4.3.1/css`)).toBe(true);
+        expect(areEqualDirectories('../node_modules/bootstrap/dist/js', `${OUTPUT_DIR}/packages/bootstrap-4.3.1/js`)).toBe(true);
         // expect(JSON.stringify(result.compilation.options.externals)).toBe('{"bootstrap":"Bootstrap"}');
-        fs.readFile(OUPUT_HTML_FILE, 'utf8', (er, data) => {
-          expect(areEqualDirectories('../node_modules/bootstrap/dist/css', `${OUTPUT_DIR}/packages/bootstrap-4.3.1/css`)).toBe(true);
-          expect(areEqualDirectories('../node_modules/bootstrap/dist/js', `${OUTPUT_DIR}/packages/bootstrap-4.3.1/js`)).toBe(true);
-          expect(er).toBeFalsy();
-          const $ = cheerio.load(data);
-          expect($('script').length).toBe(3);
-          expect($('link').length).toBe(2);
-          expect($('script[src="app.js"]')).toBeTag({ tagName: 'script', attributes: { 'src': 'app.js', 'type': 'text/javascript' } });
-          expect($('script[src="style.js"]')).toBeTag({ tagName: 'script', attributes: { 'src': 'style.js', 'type': 'text/javascript' } });
-          expect($('link[href="style.css"]')).toBeTag({ tagName: 'link', attributes: { 'href': 'style.css', 'rel': 'stylesheet' } });
-          expect($('link[href="https://unpkg.com/bootstrap@4.3.1/css/bootstrap.min.css"]')).toBeTag({ tagName: 'link', attributes: { 'href': 'https://unpkg.com/bootstrap@4.3.1/css/bootstrap.min.css', 'rel': 'stylesheet' } });
-          expect($('script[src="https://unpkg.com/bootstrap@4.3.1/js/bootstrap.bundle.min.js"]')).toBeTag({ tagName: 'script', attributes: { 'src': 'https://unpkg.com/bootstrap@4.3.1/js/bootstrap.bundle.min.js' } });
+
+        cheerioLoadTags(OUPUT_HTML_FILE, ({ links, scripts }) => {
+          expect(links.length).toBe(2);
+          expect(scripts.length).toBe(3);
+          expect(links).toContainTag({ tagName: 'link', attributes: { 'href': 'style.css', 'rel': 'stylesheet' } });
+          expect(links[1]).toBeTag({ tagName: 'link', attributes: { 'href': 'https://unpkg.com/bootstrap@4.3.1/css/bootstrap.min.css', 'rel': 'stylesheet' } });
+          expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'app.js', 'type': 'text/javascript' } });
+          expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'style.js', 'type': 'text/javascript' } });
+          expect(scripts[2]).toBeTag({ tagName: 'script', attributes: { 'src': 'https://unpkg.com/bootstrap@4.3.1/js/bootstrap.bundle.min.js' } });
+
           done();
         });
       });
@@ -292,18 +390,18 @@ describe('end to end', () => {
       }), (err, result) => {
         expect(err).toBeFalsy();
         expect(JSON.stringify(result.compilation.errors)).toBe('[]');
-        fs.readFile(OUPUT_HTML_FILE, 'utf8', (er, data) => {
-          expect(er).toBeFalsy();
-          const $ = cheerio.load(data);
-          expect($('script').length).toBe(4);
-          expect($('link').length).toBe(3);
-          expect($('script[src="app.js"]')).toBeTag({ tagName: 'script', attributes: { 'src': 'app.js', 'type': 'text/javascript' } });
-          expect($('script[src="style.js"]')).toBeTag({ tagName: 'script', attributes: { 'src': 'style.js', 'type': 'text/javascript' } });
-          expect($('link[href="style.css"]')).toBeTag({ tagName: 'link', attributes: { 'href': 'style.css', 'rel': 'stylesheet' } });
-          expect($('link[href="http://mydomain.com/bootstrap@4.3.1/link-a"]')).toBeTag({ tagName: 'link', attributes: { 'href': 'http://mydomain.com/bootstrap@4.3.1/link-a', 'rel': 'stylesheet' } });
-          expect($('link[href="packages/bootstrap-4.3.1/link-b"]')).toBeTag({ tagName: 'link', attributes: { 'href': 'packages/bootstrap-4.3.1/link-b', 'rel': 'stylesheet' } });
-          expect($('script[src="packages/bootstrap-4.3.1/script-a"]')).toBeTag({ tagName: 'script', attributes: { 'src': 'packages/bootstrap-4.3.1/script-a' } });
-          expect($('script[src="http://mydomain.com/bootstrap@4.3.1/script-b"]')).toBeTag({ tagName: 'script', attributes: { 'src': 'http://mydomain.com/bootstrap@4.3.1/script-b' } });
+
+        cheerioLoadTags(OUPUT_HTML_FILE, ({ links, scripts }) => {
+          expect(links.length).toBe(3);
+          expect(scripts.length).toBe(4);
+          expect(links).toContainTag({ tagName: 'link', attributes: { 'href': 'style.css', 'rel': 'stylesheet' } });
+          expect(links[1]).toBeTag({ tagName: 'link', attributes: { 'href': 'http://mydomain.com/bootstrap@4.3.1/link-a', 'rel': 'stylesheet' } });
+          expect(links[2]).toBeTag({ tagName: 'link', attributes: { 'href': 'packages/bootstrap-4.3.1/link-b', 'rel': 'stylesheet' } });
+          expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'app.js', 'type': 'text/javascript' } });
+          expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'style.js', 'type': 'text/javascript' } });
+          expect(scripts[2]).toBeTag({ tagName: 'script', attributes: { 'src': 'packages/bootstrap-4.3.1/script-a' } });
+          expect(scripts[3]).toBeTag({ tagName: 'script', attributes: { 'src': 'http://mydomain.com/bootstrap@4.3.1/script-b' } });
+
           done();
         });
       });
@@ -353,22 +451,21 @@ describe('end to end', () => {
       }), (err, result) => {
         expect(err).toBeFalsy();
         expect(JSON.stringify(result.compilation.errors)).toBe('[]');
-        fs.readFile(OUPUT_HTML_FILE, 'utf8', (er, data) => {
-          expect(er).toBeFalsy();
-          const $ = cheerio.load(data);
-          expect($('script').length).toBe(6);
-          expect($('link').length).toBe(5);
-          expect($('script[src="app.js"]')).toBeTag({ tagName: 'script', attributes: { 'src': 'app.js', 'type': 'text/javascript' } });
-          expect($('script[src="style.js"]')).toBeTag({ tagName: 'script', attributes: { 'src': 'style.js', 'type': 'text/javascript' } });
-          expect($('link[href="style.css"]')).toBeTag({ tagName: 'link', attributes: { 'href': 'style.css', 'rel': 'stylesheet' } });
-          expect($('link[href="http://mydomain.com/bootstrap@4.3.1/link-a"]')).toBeTag({ tagName: 'link', attributes: { 'href': 'http://mydomain.com/bootstrap@4.3.1/link-a', 'rel': 'stylesheet' } });
-          expect($('link[href="packages/bootstrap-4.3.1/link-b"]')).toBeTag({ tagName: 'link', attributes: { 'href': 'packages/bootstrap-4.3.1/link-b', 'rel': 'stylesheet' } });
-          expect($('script[src="packages/bootstrap-4.3.1/script-a"]')).toBeTag({ tagName: 'script', attributes: { 'src': 'packages/bootstrap-4.3.1/script-a' } });
-          expect($('script[src="http://mydomain.com/bootstrap@4.3.1/script-b"]')).toBeTag({ tagName: 'script', attributes: { 'src': 'http://mydomain.com/bootstrap@4.3.1/script-b' } });
-          expect($('link[href="packages/bulma-0.7.4/link-c"]')).toBeTag({ tagName: 'link', attributes: { 'href': 'packages/bulma-0.7.4/link-c', 'rel': 'stylesheet' } });
-          expect($('link[href="http://mydomain.com/bulma@0.7.4/link-d"]')).toBeTag({ tagName: 'link', attributes: { 'href': 'http://mydomain.com/bulma@0.7.4/link-d', 'rel': 'stylesheet' } });
-          expect($('script[src="http://mydomain.com/bulma@0.7.4/script-c"]')).toBeTag({ tagName: 'script', attributes: { 'src': 'http://mydomain.com/bulma@0.7.4/script-c' } });
-          expect($('script[src="packages/bulma-0.7.4/script-d"]')).toBeTag({ tagName: 'script', attributes: { 'src': 'packages/bulma-0.7.4/script-d' } });
+
+        cheerioLoadTags(OUPUT_HTML_FILE, ({ links, scripts }) => {
+          expect(links.length).toBe(5);
+          expect(scripts.length).toBe(6);
+          expect(links).toContainTag({ tagName: 'link', attributes: { 'href': 'style.css', 'rel': 'stylesheet' } });
+          expect(links[1]).toBeTag({ tagName: 'link', attributes: { 'href': 'http://mydomain.com/bootstrap@4.3.1/link-a', 'rel': 'stylesheet' } });
+          expect(links[2]).toBeTag({ tagName: 'link', attributes: { 'href': 'packages/bootstrap-4.3.1/link-b', 'rel': 'stylesheet' } });
+          expect(links[3]).toBeTag({ tagName: 'link', attributes: { 'href': 'packages/bulma-0.7.4/link-c', 'rel': 'stylesheet' } });
+          expect(links[4]).toBeTag({ tagName: 'link', attributes: { 'href': 'http://mydomain.com/bulma@0.7.4/link-d', 'rel': 'stylesheet' } });
+          expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'app.js', 'type': 'text/javascript' } });
+          expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'style.js', 'type': 'text/javascript' } });
+          expect(scripts[2]).toBeTag({ tagName: 'script', attributes: { 'src': 'packages/bootstrap-4.3.1/script-a' } });
+          expect(scripts[3]).toBeTag({ tagName: 'script', attributes: { 'src': 'http://mydomain.com/bootstrap@4.3.1/script-b' } });
+          expect(scripts[4]).toBeTag({ tagName: 'script', attributes: { 'src': 'http://mydomain.com/bulma@0.7.4/script-c' } });
+          expect(scripts[5]).toBeTag({ tagName: 'script', attributes: { 'src': 'packages/bulma-0.7.4/script-d' } });
 
           done();
         });
@@ -400,18 +497,16 @@ describe('end to end', () => {
         expect(err).toBeFalsy();
         expect(JSON.stringify(result.compilation.errors)).toBe('[]');
         // expect(JSON.stringify(result.compilation.options.externals)).toBe('{"bootstrap":"Bootstrap"}');
-        fs.readFile(OUPUT_HTML_FILE, 'utf8', (er, data) => {
-          expect(areEqualDirectories('../node_modules/bootstrap/dist/css', `${OUTPUT_DIR}/packages/bootstrap-4.3.1/css`)).toBe(true);
-          expect(areEqualDirectories('../node_modules/bootstrap/dist/js', `${OUTPUT_DIR}/packages/bootstrap-4.3.1/js`)).toBe(true);
-          expect(er).toBeFalsy();
-          const $ = cheerio.load(data);
-          expect($('script').length).toBe(3);
-          expect($('link').length).toBe(2);
-          expect($('script[src="app.js"]')).toBeTag({ tagName: 'script', attributes: { 'src': 'app.js', 'type': 'text/javascript' } });
-          expect($('script[src="style.js"]')).toBeTag({ tagName: 'script', attributes: { 'src': 'style.js', 'type': 'text/javascript' } });
-          expect($('link[href="style.css"]')).toBeTag({ tagName: 'link', attributes: { 'href': 'style.css', 'rel': 'stylesheet' } });
-          expect($('link[href="https://mydomain.com/bootstrap@4.3.1/css/bootstrap.min.css"]')).toBeTag({ tagName: 'link', attributes: { 'href': 'https://mydomain.com/bootstrap@4.3.1/css/bootstrap.min.css', 'rel': 'stylesheet' } });
-          expect($('script[src="https://mydomain.com/bootstrap@4.3.1/js/bootstrap.bundle.min.js"]')).toBeTag({ tagName: 'script', attributes: { 'src': 'https://mydomain.com/bootstrap@4.3.1/js/bootstrap.bundle.min.js' } });
+
+        cheerioLoadTags(OUPUT_HTML_FILE, ({ links, scripts }) => {
+          expect(links.length).toBe(2);
+          expect(scripts.length).toBe(3);
+          expect(links).toContainTag({ tagName: 'link', attributes: { 'href': 'style.css', 'rel': 'stylesheet' } });
+          expect(links[1]).toBeTag({ tagName: 'link', attributes: { 'href': 'https://mydomain.com/bootstrap@4.3.1/css/bootstrap.min.css', 'rel': 'stylesheet' } });
+          expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'app.js', 'type': 'text/javascript' } });
+          expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'style.js', 'type': 'text/javascript' } });
+          expect(scripts[2]).toBeTag({ tagName: 'script', attributes: { 'src': 'https://mydomain.com/bootstrap@4.3.1/js/bootstrap.bundle.min.js' } });
+
           done();
         });
       });
@@ -442,17 +537,17 @@ describe('end to end', () => {
         expect(err).toBeFalsy();
         expect(JSON.stringify(result.compilation.errors)).toBe('[]');
         // expect(JSON.stringify(result.compilation.options.externals)).toBe('{"bootstrap":"Bootstrap"}');
-        fs.readFile(OUPUT_HTML_FILE, 'utf8', (er, data) => {
-          expect(er).toBeFalsy();
-          const $ = cheerio.load(data);
-          expect($('script').length).toBe(3);
-          expect($('link').length).toBe(3);
-          expect($('script[src="app.js"]')).toBeTag({ tagName: 'script', attributes: { 'src': 'app.js', 'type': 'text/javascript' } });
-          expect($('script[src="style.js"]')).toBeTag({ tagName: 'script', attributes: { 'src': 'style.js', 'type': 'text/javascript' } });
-          expect($('link[href="style.css"]')).toBeTag({ tagName: 'link', attributes: { 'href': 'style.css', 'rel': 'stylesheet' } });
-          expect($('link[href="http://abc.com/bootstrap@4.3.1/style-a.css"]')).toBeTag({ tagName: 'link', attributes: { 'href': 'http://abc.com/bootstrap@4.3.1/style-a.css', 'rel': 'stylesheet' } });
-          expect($('link[href="http://abc.com/bootstrap@4.3.1/cdn-style-b.css"]')).toBeTag({ tagName: 'link', attributes: { 'href': 'http://abc.com/bootstrap@4.3.1/cdn-style-b.css', 'rel': 'stylesheet' } });
-          expect($('script[src="http://abc.com/bootstrap@4.3.1/cdn-script-a.js"]')).toBeTag({ tagName: 'script', attributes: { 'src': 'http://abc.com/bootstrap@4.3.1/cdn-script-a.js' } });
+
+        cheerioLoadTags(OUPUT_HTML_FILE, ({ links, scripts }) => {
+          expect(links.length).toBe(3);
+          expect(scripts.length).toBe(3);
+          expect(links).toContainTag({ tagName: 'link', attributes: { 'href': 'style.css', 'rel': 'stylesheet' } });
+          expect(links[1]).toBeTag({ tagName: 'link', attributes: { 'href': 'http://abc.com/bootstrap@4.3.1/style-a.css', 'rel': 'stylesheet' } });
+          expect(links[2]).toBeTag({ tagName: 'link', attributes: { 'href': 'http://abc.com/bootstrap@4.3.1/cdn-style-b.css', 'rel': 'stylesheet' } });
+          expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'app.js', 'type': 'text/javascript' } });
+          expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'style.js', 'type': 'text/javascript' } });
+          expect(scripts[2]).toBeTag({ tagName: 'script', attributes: { 'src': 'http://abc.com/bootstrap@4.3.1/cdn-script-a.js' } });
+
           done();
         });
       });
@@ -476,15 +571,15 @@ describe('end to end', () => {
       }), (err, result) => {
         expect(err).toBeFalsy();
         expect(JSON.stringify(result.compilation.errors)).toBe('[]');
-        fs.readFile(OUPUT_HTML_FILE, 'utf8', (er, data) => {
-          expect(er).toBeFalsy();
-          const $ = cheerio.load(data);
-          expect($('script').length).toBe(2);
-          expect($('link').length).toBe(2);
-          expect($('script[src="app.js"]')).toBeTag({ tagName: 'script', attributes: { 'src': 'app.js', 'type': 'text/javascript' } });
-          expect($('script[src="style.js"]')).toBeTag({ tagName: 'script', attributes: { 'src': 'style.js', 'type': 'text/javascript' } });
-          expect($('link[href="style.css"]')).toBeTag({ tagName: 'link', attributes: { 'href': 'style.css', 'rel': 'stylesheet' } });
-          expect($('link[href="packages/bootstrap-fake-version/css/bootstrap.min.css"]')).toBeTag({ tagName: 'link', attributes: { 'href': 'packages/bootstrap-fake-version/css/bootstrap.min.css', 'rel': 'stylesheet' } });
+
+        cheerioLoadTags(OUPUT_HTML_FILE, ({ links, scripts }) => {
+          expect(links.length).toBe(2);
+          expect(scripts.length).toBe(2);
+          expect(links).toContainTag({ tagName: 'link', attributes: { 'href': 'style.css', 'rel': 'stylesheet' } });
+          expect(links[1]).toBeTag({ tagName: 'link', attributes: { 'href': 'packages/bootstrap-fake-version/css/bootstrap.min.css', 'rel': 'stylesheet' } });
+          expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'app.js', 'type': 'text/javascript' } });
+          expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'style.js', 'type': 'text/javascript' } });
+
           done();
         });
       });
@@ -509,15 +604,15 @@ describe('end to end', () => {
       }), (err, result) => {
         expect(err).toBeFalsy();
         expect(JSON.stringify(result.compilation.errors)).toBe('[]');
-        fs.readFile(OUPUT_HTML_FILE, 'utf8', (er, data) => {
-          expect(er).toBeFalsy();
-          const $ = cheerio.load(data);
-          expect($('script').length).toBe(2);
-          expect($('link').length).toBe(2);
-          expect($('script[src="app.js"]')).toBeTag({ tagName: 'script', attributes: { 'src': 'app.js', 'type': 'text/javascript' } });
-          expect($('script[src="style.js"]')).toBeTag({ tagName: 'script', attributes: { 'src': 'style.js', 'type': 'text/javascript' } });
-          expect($('link[href="style.css"]')).toBeTag({ tagName: 'link', attributes: { 'href': 'style.css', 'rel': 'stylesheet' } });
-          expect($('link[href="packages/bootstrap-4.3.1/css/bootstrap.css"]')).toBeTag({ tagName: 'link', attributes: { 'href': 'packages/bootstrap-4.3.1/css/bootstrap.css', 'rel': 'stylesheet' } });
+
+        cheerioLoadTags(OUPUT_HTML_FILE, ({ links, scripts }) => {
+          expect(links.length).toBe(2);
+          expect(scripts.length).toBe(2);
+          expect(links).toContainTag({ tagName: 'link', attributes: { 'href': 'style.css', 'rel': 'stylesheet' } });
+          expect(links[1]).toBeTag({ tagName: 'link', attributes: { 'href': 'packages/bootstrap-4.3.1/css/bootstrap.css', 'rel': 'stylesheet' } });
+          expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'app.js', 'type': 'text/javascript' } });
+          expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'style.js', 'type': 'text/javascript' } });
+
           done();
         });
       });
@@ -548,16 +643,16 @@ describe('end to end', () => {
       }), (err, result) => {
         expect(err).toBeFalsy();
         expect(JSON.stringify(result.compilation.errors)).toBe('[]');
-        fs.readFile(OUPUT_HTML_FILE, 'utf8', (er, data) => {
-          expect(er).toBeFalsy();
-          const $ = cheerio.load(data);
-          expect($('script').length).toBe(3);
-          expect($('link').length).toBe(2);
-          expect($('script[src="app.js"]')).toBeTag({ tagName: 'script', attributes: { 'src': 'app.js', 'type': 'text/javascript' } });
-          expect($('script[src="style.js"]')).toBeTag({ tagName: 'script', attributes: { 'src': 'style.js', 'type': 'text/javascript' } });
-          expect($('link[href="style.css"]')).toBeTag({ tagName: 'link', attributes: { 'href': 'style.css', 'rel': 'stylesheet' } });
-          expect($('link[href="http://mydomain.com/bootstrap@4.3.1/css/bootstrap.min.css"]')).toBeTag({ tagName: 'link', attributes: { 'href': 'http://mydomain.com/bootstrap@4.3.1/css/bootstrap.min.css', 'rel': 'stylesheet' } });
-          expect($('script[src="http://mydomain.com/bootstrap@4.3.1/js/bootstrap.min.js"]')).toBeTag({ tagName: 'script', attributes: { 'src': 'http://mydomain.com/bootstrap@4.3.1/js/bootstrap.min.js', 'type': 'text/javascript' } });
+
+        cheerioLoadTags(OUPUT_HTML_FILE, ({ links, scripts }) => {
+          expect(links.length).toBe(2);
+          expect(scripts.length).toBe(3);
+          expect(links).toContainTag({ tagName: 'link', attributes: { 'href': 'style.css', 'rel': 'stylesheet' } });
+          expect(links[1]).toBeTag({ tagName: 'link', attributes: { 'href': 'http://mydomain.com/bootstrap@4.3.1/css/bootstrap.min.css', 'rel': 'stylesheet' } });
+          expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'app.js', 'type': 'text/javascript' } });
+          expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'style.js', 'type': 'text/javascript' } });
+          expect(scripts[2]).toBeTag({ tagName: 'script', attributes: { 'src': 'http://mydomain.com/bootstrap@4.3.1/js/bootstrap.min.js', 'type': 'text/javascript' } });
+
           done();
         });
       });
@@ -598,15 +693,15 @@ describe('end to end', () => {
       }), (err, result) => {
         expect(err).toBeFalsy();
         expect(JSON.stringify(result.compilation.errors)).toBe('[]');
-        fs.readFile(OUPUT_HTML_FILE, 'utf8', (er, data) => {
-          expect(er).toBeFalsy();
-          const $ = cheerio.load(data);
-          expect($('script').length).toBe(2);
-          expect($('link').length).toBe(2);
-          expect($('script[src="/public-path/app.js"]')).toBeTag({ tagName: 'script', attributes: { 'src': '/public-path/app.js', 'type': 'text/javascript' } });
-          expect($('script[src="/public-path/style.js"]')).toBeTag({ tagName: 'script', attributes: { 'src': '/public-path/style.js', 'type': 'text/javascript' } });
-          expect($('link[href="/public-path/style.css"]')).toBeTag({ tagName: 'link', attributes: { 'href': '/public-path/style.css', 'rel': 'stylesheet' } });
-          expect($('link[href="/public-path/assets/the-href"]')).toBeTag({ tagName: 'link', attributes: { href: '/public-path/assets/the-href', rel: 'the-rel' } });
+
+        cheerioLoadTags(OUPUT_HTML_FILE, ({ links, scripts }) => {
+          expect(links.length).toBe(2);
+          expect(scripts.length).toBe(2);
+          expect(links).toContainTag({ tagName: 'link', attributes: { 'href': '/public-path/style.css', 'rel': 'stylesheet' } });
+          expect(links[1]).toBeTag({ tagName: 'link', attributes: { href: '/public-path/assets/the-href', rel: 'the-rel' } });
+          expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': '/public-path/app.js', 'type': 'text/javascript' } });
+          expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': '/public-path/style.js', 'type': 'text/javascript' } });
+
           done();
         });
       });
@@ -632,16 +727,16 @@ describe('end to end', () => {
       }), (err, result) => {
         expect(err).toBeFalsy();
         expect(JSON.stringify(result.compilation.errors)).toBe('[]');
-        fs.readFile(OUPUT_HTML_FILE, 'utf8', (er, data) => {
-          expect(er).toBeFalsy();
-          const $ = cheerio.load(data);
-          expect($('script').length).toBe(4);
-          expect($('link').length).toBe(1);
-          expect($('script[src="/public-path/app.js"]')).toBeTag({ tagName: 'script', attributes: { 'src': '/public-path/app.js', 'type': 'text/javascript' } });
-          expect($('script[src="/public-path/style.js"]')).toBeTag({ tagName: 'script', attributes: { 'src': '/public-path/style.js', 'type': 'text/javascript' } });
-          expect($('link[href="/public-path/style.css"]')).toBeTag({ tagName: 'link', attributes: { 'href': '/public-path/style.css', 'rel': 'stylesheet' } });
-          expect($('script[src="/public-path/assets/the-src"]')).toBeTag({ tagName: 'script', attributes: { 'src': '/public-path/assets/the-src' } });
-          expect($('script[src="assets/the-src2"]')).toBeTag({ tagName: 'script', attributes: { 'src': 'assets/the-src2' } });
+
+        cheerioLoadTags(OUPUT_HTML_FILE, ({ links, scripts }) => {
+          expect(links.length).toBe(1);
+          expect(scripts.length).toBe(4);
+          expect(links).toContainTag({ tagName: 'link', attributes: { 'href': '/public-path/style.css', 'rel': 'stylesheet' } });
+          expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': '/public-path/app.js', 'type': 'text/javascript' } });
+          expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': '/public-path/style.js', 'type': 'text/javascript' } });
+          expect(scripts[2]).toBeTag({ tagName: 'script', attributes: { 'src': '/public-path/assets/the-src' } });
+          expect(scripts[3]).toBeTag({ tagName: 'script', attributes: { 'src': 'assets/the-src2' } });
+
           done();
         });
       });
@@ -666,15 +761,15 @@ describe('end to end', () => {
       }), (err, result) => {
         expect(err).toBeFalsy();
         expect(JSON.stringify(result.compilation.errors)).toBe('[]');
-        fs.readFile(OUPUT_HTML_FILE, 'utf8', (er, data) => {
-          expect(er).toBeFalsy();
-          const $ = cheerio.load(data);
-          expect($('script').length).toBe(2);
-          expect($('link').length).toBe(2);
-          expect($('script[src="/public-path/app.js"]')).toBeTag({ tagName: 'script', attributes: { 'src': '/public-path/app.js', 'type': 'text/javascript' } });
-          expect($('script[src="/public-path/style.js"]')).toBeTag({ tagName: 'script', attributes: { 'src': '/public-path/style.js', 'type': 'text/javascript' } });
-          expect($('link[href="/public-path/style.css"]')).toBeTag({ tagName: 'link', attributes: { 'href': '/public-path/style.css', 'rel': 'stylesheet' } });
-          expect($('link[href="/public-path/my-assets/the-href"]')).toBeTag({ tagName: 'link', attributes: { href: '/public-path/my-assets/the-href', rel: 'the-rel' } });
+
+        cheerioLoadTags(OUPUT_HTML_FILE, ({ links, scripts }) => {
+          expect(links.length).toBe(2);
+          expect(scripts.length).toBe(2);
+          expect(links).toContainTag({ tagName: 'link', attributes: { 'href': '/public-path/style.css', 'rel': 'stylesheet' } });
+          expect(links[1]).toBeTag({ tagName: 'link', attributes: { href: '/public-path/my-assets/the-href', rel: 'the-rel' } });
+          expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': '/public-path/app.js', 'type': 'text/javascript' } });
+          expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': '/public-path/style.js', 'type': 'text/javascript' } });
+
           done();
         });
       });
@@ -701,16 +796,16 @@ describe('end to end', () => {
       }), (err, result) => {
         expect(err).toBeFalsy();
         expect(JSON.stringify(result.compilation.errors)).toBe('[]');
-        fs.readFile(OUPUT_HTML_FILE, 'utf8', (er, data) => {
-          expect(er).toBeFalsy();
-          const $ = cheerio.load(data);
-          expect($('script').length).toBe(3);
-          expect($('link').length).toBe(2);
-          expect($('script[src="app.js"]')).toBeTag({ tagName: 'script', attributes: { 'src': 'app.js', 'type': 'text/javascript' } });
-          expect($('script[src="style.js"]')).toBeTag({ tagName: 'script', attributes: { 'src': 'style.js', 'type': 'text/javascript' } });
-          expect($('link[href="style.css"]')).toBeTag({ tagName: 'link', attributes: { 'href': 'style.css', 'rel': 'stylesheet' } });
-          expect($('link[href="assets/my-assets/foo.css"]')).toBeTag({ tagName: 'link', attributes: { 'href': 'assets/my-assets/foo.css', 'rel': 'stylesheet' } });
-          expect($('script[src="assets/my-assets/foo.js"]')).toBeTag({ tagName: 'script', attributes: { 'src': 'assets/my-assets/foo.js', 'type': 'text/javascript' } });
+
+        cheerioLoadTags(OUPUT_HTML_FILE, ({ links, scripts }) => {
+          expect(links.length).toBe(2);
+          expect(scripts.length).toBe(3);
+          expect(links).toContainTag({ tagName: 'link', attributes: { 'href': 'style.css', 'rel': 'stylesheet' } });
+          expect(links[1]).toBeTag({ tagName: 'link', attributes: { 'href': 'assets/my-assets/foo.css', 'rel': 'stylesheet' } });
+          expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'app.js', 'type': 'text/javascript' } });
+          expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'style.js', 'type': 'text/javascript' } });
+          expect(scripts[2]).toBeTag({ tagName: 'script', attributes: { 'src': 'assets/my-assets/foo.js', 'type': 'text/javascript' } });
+
           done();
         });
       });
