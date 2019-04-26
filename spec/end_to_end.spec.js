@@ -218,7 +218,7 @@ describe('end to end', () => {
               expect(err).toBeFalsy();
               expect(JSON.stringify(result.compilation.errors)).toBe('[]');
 
-              cheerioLoadTags(OUPUT_HTML_FILE, ({ links, scripts, data }) => {
+              cheerioLoadTags(OUPUT_HTML_FILE, ({ links, scripts }) => {
                 expect(links.length).toBe(expectedLinkCount);
                 expect(scripts.length).toBe(expetedScriptCount);
                 expect(links).toContainTag({ tagName: 'link', attributes: { 'href': 'style.css', 'rel': 'stylesheet' } });
@@ -256,7 +256,7 @@ describe('end to end', () => {
               expect(err).toBeFalsy();
               expect(JSON.stringify(result.compilation.errors)).toBe('[]');
 
-              cheerioLoadTags(OUPUT_HTML_FILE, ({ links, scripts, data }) => {
+              cheerioLoadTags(OUPUT_HTML_FILE, ({ links, scripts }) => {
                 expect(links.length).toBe(expectedLinkCount);
                 expect(scripts.length).toBe(expetedScriptCount);
                 expect(links).toContainTag({ tagName: 'link', attributes: { 'href': 'style.css', 'rel': 'stylesheet' } });
