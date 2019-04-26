@@ -604,6 +604,28 @@ describe('option validation', () => {
       done();
     });
   });
+
+  describe('options.assets.tags', () => {
+    it('should not throw an error if the tags option is specified for assets and is invalid for the tags plugin', done => {
+      const theFunction = () => {
+        return new HtmlWebpackDeployPlugin({ assets: { tags: 123 } });
+      };
+
+      expect(theFunction).toThrowError(/(options.assets.tags is not supported)/);
+      done();
+    });
+  });
+
+  describe('options.packages.tags', () => {
+    it('should not throw an error if the tags option is specified for a package and is invalid for the tags plugin', done => {
+      const theFunction = () => {
+        return new HtmlWebpackDeployPlugin({ packages: { p: { tags: 123 } } });
+      };
+
+      expect(theFunction).toThrowError(/(options.packages.p.tags is not supported)/);
+      done();
+    });
+  });
 });
 
 /*

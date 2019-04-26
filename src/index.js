@@ -35,10 +35,9 @@ const isFunctionReturningString = v => isFunction(v) && isString(v('', '', ''));
 
 const getGroupLevelOptions = (options, optionPath, defaultOptions = {}) => {
   if (isObject(options)) {
-    const { tags, links, scripts, ...otherOptions } = options;
+    const { links, scripts, ...otherOptions } = options;
     return {
       ...getValidatedOptions(otherOptions, optionPath, defaultOptions),
-      tags,
       links,
       scripts
     };
@@ -48,6 +47,7 @@ const getGroupLevelOptions = (options, optionPath, defaultOptions = {}) => {
 };
 
 const getTagsLevelOptions = (options, optionPath) => {
+  assert(!(isObject(options) && isDefined(options.tags)), `${optionPath}.tags is not supported`);
   const validatedOptions = getValidatedOptions(options, optionPath, {});
   if (isDefined(validatedOptions.copy)) {
     const { copy } = validatedOptions;
@@ -104,7 +104,7 @@ const getValidatedRootOptions = (options, optionPath, defaultRootOptions = DEFAU
 const getValidatedAssetsOptions = (assets, rootOptions, mainOptions, optionPath) => {
   const validatedAssets = getTagsLevelOptions(assets, optionPath);
   const { addAssetPath } = rootOptions;
-  const { copy, links, scripts, tags, assetsOptions } = validatedAssets;
+  const { copy, links, scripts, assetsOptions } = validatedAssets;
 
   const baseOptions = { ...mainOptions, ...assetsOptions };
 
@@ -130,9 +130,6 @@ const getValidatedAssetsOptions = (assets, rootOptions, mainOptions, optionPath)
   }
   if (isDefined(scripts)) {
     validatedAssets.scripts = scripts.map(getAddAssetPaths('scripts'));
-  }
-  if (isDefined(tags)) {
-    validatedAssets.tags = tags.map(getAddAssetPaths('tags'));
   }
   return validatedAssets;
 };
@@ -168,7 +165,7 @@ const getValidatedPackagesOptions = (packages, rootOptions, mainOptions, optionP
 const getValidatedPackageOptions = (thePackage, packageName, rootOptions, mainOptions, optionPath) => {
   optionPath = `${optionPath}.${packageName}`;
   const validatedPackage = getValidatedCdnOptions(getTagsLevelOptions(thePackage, optionPath), optionPath, mainOptions);
-  const { copy, links, scripts, tags, ...packageOptions } = validatedPackage;
+  const { copy, links, scripts, ...packageOptions } = validatedPackage;
   const { findPackagePath, addPackagePath } = rootOptions;
   const packagePath = findPackagePath(process.cwd(), packageName);
   assert(isString(packagePath), `${optionPath} package path could not be found`);
@@ -256,16 +253,6 @@ const getValidatedPackageOptions = (thePackage, packageName, rootOptions, mainOp
     validatedPackage.scripts = scripts.map(tag => applyCdnDevPackagePath(tag, 'scripts'));
     validatedPackage.scripts = validatedPackage.scripts.map(applyExternal);
   }
-  if (isDefined(tags)) {
-    validatedPackage.tags = tags.map(tag => applyCdnDevPackagePath(tag, 'tags'));
-    const applyTagExternal = tag => {
-      if (isDefined(tag.type) && tag.type === 'js') {
-        return applyExternal(tag);
-      }
-      return tag;
-    };
-    validatedPackage.tags = validatedPackage.tags.map(applyTagExternal);
-  }
   return validatedPackage;
 };
 
@@ -273,11 +260,10 @@ function HtmlWebpackDeployPlugin (options) {
   const copyList = [];
   const linkList = [];
   const scriptList = [];
-  const tagList = [];
   const validatedOptions = getValidatedRootOptions(options, `${PLUGIN_NAME}.options`);
   const { assets, packages } = validatedOptions;
   const addSection = section => {
-    const { copy, links, scripts, tags } = section;
+    const { copy, links, scripts } = section;
     if (isDefined(copy)) {
       copyList.push(...copy);
     }
@@ -286,9 +272,6 @@ function HtmlWebpackDeployPlugin (options) {
     }
     if (isDefined(scripts)) {
       scriptList.push(...scripts);
-    }
-    if (isDefined(tags)) {
-      tagList.push(...tags);
     }
   };
   if (isDefined(assets)) {
@@ -303,13 +286,12 @@ function HtmlWebpackDeployPlugin (options) {
   this.options = {
     copy: copyList,
     links: linkList,
-    scripts: scriptList,
-    tags: tagList
+    scripts: scriptList
   };
 }
 
 HtmlWebpackDeployPlugin.prototype.apply = function (compiler) {
-  let { copy, links, scripts, tags } = this.options;
+  let { copy, links, scripts } = this.options;
   if (compiler.options.mode === 'development') {
     const applyDevPath = tag => {
       if (isDefined(tag.devPath) && !tag.useCdn) {
@@ -323,10 +305,9 @@ HtmlWebpackDeployPlugin.prototype.apply = function (compiler) {
 
     links = links.map(applyDevPath);
     scripts = scripts.map(applyDevPath);
-    tags = tags.map(applyDevPath);
   }
   new CopyWebpackPlugin(copy).apply(compiler);
-  new HtmlWebpackTagsPlugin({ links, scripts, tags }).apply(compiler);
+  new HtmlWebpackTagsPlugin({ links, scripts }).apply(compiler);
 };
 
 module.exports = HtmlWebpackDeployPlugin;

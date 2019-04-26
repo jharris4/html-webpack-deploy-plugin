@@ -565,7 +565,7 @@ describe('end to end', () => {
   });
 
   describe('assets', () => {
-    it('it copies assets copy', done => {
+    it('it copies files in the assets copy options', done => {
       webpack(createWebpackConfig({
         options: {
           assets: {
@@ -607,6 +607,41 @@ describe('end to end', () => {
           expect($('script[src="/public-path/style.js"]')).toBeTag({ tagName: 'script', attributes: { 'src': '/public-path/style.js', 'type': 'text/javascript' } });
           expect($('link[href="/public-path/style.css"]')).toBeTag({ tagName: 'link', attributes: { 'href': '/public-path/style.css', 'rel': 'stylesheet' } });
           expect($('link[href="/public-path/assets/the-href"]')).toBeTag({ tagName: 'link', attributes: { href: '/public-path/assets/the-href', rel: 'the-rel' } });
+          done();
+        });
+      });
+    });
+
+    it('it includes assets scripts', done => {
+      webpack(createWebpackConfig({
+        webpackPublicPath: '/public-path/',
+        options: {
+          assets: {
+            scripts: [
+              {
+                path: 'the-src',
+                publicPath: true
+              },
+              {
+                path: 'the-src2',
+                publicPath: false
+              }
+            ]
+          }
+        }
+      }), (err, result) => {
+        expect(err).toBeFalsy();
+        expect(JSON.stringify(result.compilation.errors)).toBe('[]');
+        fs.readFile(OUPUT_HTML_FILE, 'utf8', (er, data) => {
+          expect(er).toBeFalsy();
+          const $ = cheerio.load(data);
+          expect($('script').length).toBe(4);
+          expect($('link').length).toBe(1);
+          expect($('script[src="/public-path/app.js"]')).toBeTag({ tagName: 'script', attributes: { 'src': '/public-path/app.js', 'type': 'text/javascript' } });
+          expect($('script[src="/public-path/style.js"]')).toBeTag({ tagName: 'script', attributes: { 'src': '/public-path/style.js', 'type': 'text/javascript' } });
+          expect($('link[href="/public-path/style.css"]')).toBeTag({ tagName: 'link', attributes: { 'href': '/public-path/style.css', 'rel': 'stylesheet' } });
+          expect($('script[src="/public-path/assets/the-src"]')).toBeTag({ tagName: 'script', attributes: { 'src': '/public-path/assets/the-src' } });
+          expect($('script[src="assets/the-src2"]')).toBeTag({ tagName: 'script', attributes: { 'src': 'assets/the-src2' } });
           done();
         });
       });
