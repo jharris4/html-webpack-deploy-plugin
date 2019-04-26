@@ -35,12 +35,8 @@ const isFunctionReturningString = v => isFunction(v) && isString(v('', '', ''));
 
 const getGroupLevelOptions = (options, optionPath, defaultOptions = {}) => {
   if (isObject(options)) {
-    const { links, scripts, ...otherOptions } = options;
-    return {
-      ...getValidatedOptions(otherOptions, optionPath, defaultOptions),
-      links,
-      scripts
-    };
+    const { assets, packages, ...otherOptions } = options;
+    return getValidatedOptions(otherOptions, optionPath, defaultOptions);
   } else {
     return getValidatedOptions(options, optionPath, defaultOptions);
   }
@@ -111,7 +107,7 @@ const getValidatedAssetsOptions = (assets, rootOptions, mainOptions, optionPath)
   // TODO - make sure the merging here is working properly
   const addAssetPaths = (tag, optionName) => {
     const newTag = {
-      baseOptions,
+      ...baseOptions,
       ...tag,
       path: addAssetPath(tag.path)
     };
