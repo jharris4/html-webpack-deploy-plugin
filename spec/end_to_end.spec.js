@@ -233,6 +233,44 @@ describe('end to end', () => {
           });
         });
       });
+
+      describe('packages level', () => {
+        const basePackage = {
+          links: 'abc.css',
+          scripts: [{ path: 'abc.js' }]
+        };
+        const testOptions = [
+          { packages: { 'bootstrap': { ...basePackage, append: true } }, append: false },
+          { packages: { 'bootstrap': { ...basePackage, append: false } }, append: true }
+        ];
+        const addedLinkCount = 1;
+        const addedScriptCount = 1;
+        const expectedLinkCount = 1 + addedLinkCount;
+        const expetedScriptCount = 2 + addedScriptCount;
+
+        testOptions.forEach(options => {
+          const expectedLinkIndex = options.packages.bootstrap.append ? expectedLinkCount - addedLinkCount : 0;
+          const expectedScriptIndex = options.packages.bootstrap.append ? expetedScriptCount - addedScriptCount : 0;
+          it(`applies assets.append ${options.packages.bootstrap.append}`, done => {
+            webpack(createWebpackConfig({ options }), (err, result) => {
+              expect(err).toBeFalsy();
+              expect(JSON.stringify(result.compilation.errors)).toBe('[]');
+
+              cheerioLoadTags(OUPUT_HTML_FILE, ({ links, scripts, data }) => {
+                expect(links.length).toBe(expectedLinkCount);
+                expect(scripts.length).toBe(expetedScriptCount);
+                expect(links).toContainTag({ tagName: 'link', attributes: { 'href': 'style.css', 'rel': 'stylesheet' } });
+                expect(links[expectedLinkIndex]).toBeTag({ tagName: 'link', attributes: { 'href': 'packages/bootstrap-4.3.1/abc.css', 'rel': 'stylesheet' } });
+                expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'app.js', 'type': 'text/javascript' } });
+                expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'style.js', 'type': 'text/javascript' } });
+                expect(scripts[expectedScriptIndex]).toBeTag({ tagName: 'script', attributes: { 'src': 'packages/bootstrap-4.3.1/abc.js', 'type': 'text/javascript' } });
+
+                done();
+              });
+            });
+          });
+        });
+      });
     });
   });
 
