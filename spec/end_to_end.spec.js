@@ -119,7 +119,8 @@ const cheerioLoadTags = (file, tagsCallback) => {
     scripts.jasmineToString = () => cheerioScripts.toString();
     tagsCallback({
       scripts,
-      links
+      links,
+      data
     });
   });
 };
@@ -147,7 +148,7 @@ describe('end to end', () => {
 
   describe('tags plugin passthrough options', () => {
     describe('append', () => {
-      xit('applies append from the root level', done => {
+      describe('root level', () => {
         const baseOptions = {
           assets: {
             links: 'abc.css',
@@ -164,53 +165,71 @@ describe('end to end', () => {
           { ...baseOptions, append: false },
           { ...baseOptions, append: true }
         ];
-        const expectedLinkCount = 2;
-        const expetedScriptCount = 3;
+        const addedLinkCount = 2;
+        const addedScriptCount = 2;
+        const expectedLinkCount = 1 + addedLinkCount;
+        const expetedScriptCount = 2 + addedScriptCount;
+
         testOptions.forEach(options => {
-          // const expectedLinkIndex = options.append ? expectedLinkCount - 1 : 0;
-          // const expectedScriptIndex = options.append ? expetedScriptCount - 1 : 0;
-          webpack(createWebpackConfig({ options }), (err, result) => {
-            expect(err).toBeFalsy();
-            expect(JSON.stringify(result.compilation.errors)).toBe('[]');
+          const expectedLinkIndex = options.append ? expectedLinkCount - addedLinkCount : 0;
+          const expectedScriptIndex = options.append ? expetedScriptCount - addedScriptCount : 0;
+          it(`applies append ${options.append}`, done => {
+            webpack(createWebpackConfig({ options }), (err, result) => {
+              expect(err).toBeFalsy();
+              expect(JSON.stringify(result.compilation.errors)).toBe('[]');
 
-            cheerioLoadTags(OUPUT_HTML_FILE, ({ links, scripts }) => {
-              expect(links.length).toBe(expectedLinkCount);
-              expect(scripts.length).toBe(expetedScriptCount);
-              expect(links).toContainTag({ tagName: 'link', attributes: { 'href': 'style.css', 'rel': 'stylesheet' } });
-              expect(links[1]).toBeTag({ tagName: 'link', attributes: { 'href': 'assets/abc.css', 'rel': 'stylesheet' } });
-              expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'app.js', 'type': 'text/javascript' } });
-              expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'style.js', 'type': 'text/javascript' } });
-              expect(scripts[2]).toBeTag({ tagName: 'script', attributes: { 'src': 'assets/abc.js', 'type': 'text/javascript' } });
+              cheerioLoadTags(OUPUT_HTML_FILE, ({ links, scripts }) => {
+                expect(links.length).toBe(expectedLinkCount);
+                expect(scripts.length).toBe(expetedScriptCount);
+                expect(links).toContainTag({ tagName: 'link', attributes: { 'href': 'style.css', 'rel': 'stylesheet' } });
+                expect(links[expectedLinkIndex]).toBeTag({ tagName: 'link', attributes: { 'href': 'assets/abc.css', 'rel': 'stylesheet' } });
+                expect(links[expectedLinkIndex + 1]).toBeTag({ tagName: 'link', attributes: { 'href': 'packages/bootstrap-4.3.1/def.css', 'rel': 'stylesheet' } });
+                expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'app.js', 'type': 'text/javascript' } });
+                expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'style.js', 'type': 'text/javascript' } });
+                expect(scripts[expectedScriptIndex]).toBeTag({ tagName: 'script', attributes: { 'src': 'assets/abc.js', 'type': 'text/javascript' } });
+                expect(scripts[expectedScriptIndex + 1]).toBeTag({ tagName: 'script', attributes: { 'src': 'packages/bootstrap-4.3.1/def.js', 'type': 'text/javascript' } });
 
-              done();
+                done();
+              });
             });
           });
         });
       });
 
-      it('applies append from the root level', done => {
-        webpack(createWebpackConfig({
-          options: {
-            append: false,
-            assets: {
-              links: 'abc.css',
-              scripts: 'abc.js'
-            }
-          }
-        }), (err, result) => {
-          expect(err).toBeFalsy();
-          expect(JSON.stringify(result.compilation.errors)).toBe('[]');
+      fdescribe('assets level', () => {
+        const baseAssets = {
+          links: 'abc.css',
+          scripts: [{ path: 'abc.js' }]
+        };
+        const testOptions = [
+          { assets: { ...baseAssets, append: true }, append: false },
+          { assets: { ...baseAssets, append: false }, append: true }
+        ];
+        const addedLinkCount = 1;
+        const addedScriptCount = 1;
+        const expectedLinkCount = 1 + addedLinkCount;
+        const expetedScriptCount = 2 + addedScriptCount;
 
-          cheerioLoadTags(OUPUT_HTML_FILE, ({ links, scripts }) => {
-            expect(links.length).toBe(2);
-            expect(scripts.length).toBe(3);
-            expect(links).toContainTag({ tagName: 'link', attributes: { 'href': 'style.css', 'rel': 'stylesheet' } });
-            expect(links[0]).toBeTag({ tagName: 'link', attributes: { 'href': 'assets/abc.css', 'rel': 'stylesheet' } });
-            expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'app.js', 'type': 'text/javascript' } });
-            expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'style.js', 'type': 'text/javascript' } });
-            expect(scripts[0]).toBeTag({ tagName: 'script', attributes: { 'src': 'assets/abc.js', 'type': 'text/javascript' } });
+        testOptions.forEach(options => {
+          const expectedLinkIndex = options.assets.append ? expectedLinkCount - addedLinkCount : 0;
+          const expectedScriptIndex = options.assets.append ? expetedScriptCount - addedScriptCount : 0;
+          it(`applies assets.append ${options.assets.append}`, done => {
+            webpack(createWebpackConfig({ options }), (err, result) => {
+              expect(err).toBeFalsy();
+              expect(JSON.stringify(result.compilation.errors)).toBe('[]');
 
-            done();
+              cheerioLoadTags(OUPUT_HTML_FILE, ({ links, scripts, data }) => {
+                expect(links.length).toBe(expectedLinkCount);
+                expect(scripts.length).toBe(expetedScriptCount);
+                expect(links).toContainTag({ tagName: 'link', attributes: { 'href': 'style.css', 'rel': 'stylesheet' } });
+                expect(links[expectedLinkIndex]).toBeTag({ tagName: 'link', attributes: { 'href': 'assets/abc.css', 'rel': 'stylesheet' } });
+                expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'app.js', 'type': 'text/javascript' } });
+                expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'style.js', 'type': 'text/javascript' } });
+                expect(scripts[expectedScriptIndex]).toBeTag({ tagName: 'script', attributes: { 'src': 'assets/abc.js', 'type': 'text/javascript' } });
+
+                done();
+              });
+            });
           });
         });
       });
