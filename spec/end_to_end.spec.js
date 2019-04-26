@@ -196,7 +196,7 @@ describe('end to end', () => {
         });
       });
 
-      fdescribe('assets level', () => {
+      describe('assets level', () => {
         const baseAssets = {
           links: 'abc.css',
           scripts: [{ path: 'abc.js' }]
