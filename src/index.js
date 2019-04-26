@@ -100,7 +100,7 @@ const getValidatedRootOptions = (options, optionPath, defaultRootOptions = DEFAU
 const getValidatedAssetsOptions = (assets, rootOptions, mainOptions, optionPath) => {
   const validatedAssets = getTagsLevelOptions(assets, optionPath);
   const { addAssetPath } = rootOptions;
-  const { copy, links, scripts, assetsOptions } = validatedAssets;
+  const { copy, links, scripts, ...assetsOptions } = validatedAssets;
 
   const baseOptions = { ...mainOptions, ...assetsOptions };
 
