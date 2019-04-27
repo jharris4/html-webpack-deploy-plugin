@@ -416,7 +416,6 @@ describe('end to end', () => {
         });
       });
 
-      // TODO - same/dif mixup
       it('does output when files is set to the same file', done => {
         webpack(createWebpackConfig({
           options: {
@@ -444,6 +443,92 @@ describe('end to end', () => {
             expect(links[1]).toBeTag({ tagName: 'link', attributes: { 'href': `bootstrap-${BSV}/css/bootstrap.min.css`, 'rel': 'stylesheet' } });
             expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'app.js', 'type': 'text/javascript' } });
             expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'style.js', 'type': 'text/javascript' } });
+
+            done();
+          });
+        });
+      });
+    });
+
+    describe('prependExternals', () => {
+      it('auto prepends scripts with externals when prependExternals is true', done => {
+        webpack(createWebpackConfig({
+          options: {
+            packages: {
+              'bootstrap': {
+                copy: [
+                  { from: 'dist/css', to: 'css/' },
+                  { from: 'dist/js', to: 'js/' }
+                ],
+                links: [
+                  'css/bootstrap.min.css'
+                ],
+                scripts: {
+                  variableName: 'Bootstrap',
+                  path: 'js/bootstrap.bundle.min.js'
+                }
+              }
+            },
+            prependExternals: true
+          }
+        }), (err, result) => {
+          expect(err).toBeFalsy();
+          expect(JSON.stringify(result.compilation.errors)).toBe('[]');
+          expect(JSON.stringify(result.compilation.options.externals)).toBe('{"bootstrap":"Bootstrap"}');
+
+          expect(areEqualDirectories('../node_modules/bootstrap/dist/css', `${OUTPUT_DIR}/packages/bootstrap-${BSV}/css`)).toBe(true);
+          expect(areEqualDirectories('../node_modules/bootstrap/dist/js', `${OUTPUT_DIR}/packages/bootstrap-${BSV}/js`)).toBe(true);
+
+          cheerioLoadTags(OUPUT_HTML_FILE, ({ links, scripts }) => {
+            expect(links.length).toBe(2);
+            expect(scripts.length).toBe(3);
+            expect(links).toContainTag({ tagName: 'link', attributes: { 'href': 'style.css', 'rel': 'stylesheet' } });
+            expect(links[1]).toBeTag({ tagName: 'link', attributes: { 'href': `packages/bootstrap-${BSV}/css/bootstrap.min.css`, 'rel': 'stylesheet' } });
+            expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'app.js', 'type': 'text/javascript' } });
+            expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'style.js', 'type': 'text/javascript' } });
+            expect(scripts[0]).toBeTag({ tagName: 'script', attributes: { 'src': `packages/bootstrap-${BSV}/js/bootstrap.bundle.min.js` } });
+
+            done();
+          });
+        });
+      });
+
+      it('does not auto prepend scripts with externals when prependExternals is false', done => {
+        webpack(createWebpackConfig({
+          options: {
+            packages: {
+              'bootstrap': {
+                copy: [
+                  { from: 'dist/css', to: 'css/' },
+                  { from: 'dist/js', to: 'js/' }
+                ],
+                links: [
+                  'css/bootstrap.min.css'
+                ],
+                scripts: {
+                  variableName: 'Bootstrap',
+                  path: 'js/bootstrap.bundle.min.js'
+                }
+              }
+            },
+            prependExternals: false
+          }
+        }), (err, result) => {
+          expect(err).toBeFalsy();
+          expect(JSON.stringify(result.compilation.errors)).toBe('[]');
+          expect(JSON.stringify(result.compilation.options.externals)).toBe('{"bootstrap":"Bootstrap"}');
+
+          expect(areEqualDirectories('../node_modules/bootstrap/dist/css', `${OUTPUT_DIR}/packages/bootstrap-${BSV}/css`)).toBe(true);
+          expect(areEqualDirectories('../node_modules/bootstrap/dist/js', `${OUTPUT_DIR}/packages/bootstrap-${BSV}/js`)).toBe(true);
+
+          cheerioLoadTags(OUPUT_HTML_FILE, ({ links, scripts }) => {
+            expect(links.length).toBe(2);
+            expect(scripts.length).toBe(3);
+            expect(links).toContainTag({ tagName: 'link', attributes: { 'href': 'style.css', 'rel': 'stylesheet' } });
+            expect(links[1]).toBeTag({ tagName: 'link', attributes: { 'href': `packages/bootstrap-${BSV}/css/bootstrap.min.css`, 'rel': 'stylesheet' } });
+            expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'app.js', 'type': 'text/javascript' } });
+            expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'style.js', 'type': 'text/javascript' } });
+            expect(scripts[2]).toBeTag({ tagName: 'script', attributes: { 'src': `packages/bootstrap-${BSV}/js/bootstrap.bundle.min.js` } });
 
             done();
           });
