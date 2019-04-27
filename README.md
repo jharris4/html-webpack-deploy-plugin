@@ -1,7 +1,7 @@
 Deployment  extension for the HTML Webpack Plugin
 ========================================
 
-Enhances [html-webpack-plugin](https://github.com/ampedandwired/html-webpack-plugin) allowing you to **copy** and **inject** `assets` or `node_modules package assets`.
+Enhances [html-webpack-plugin](https://github.com/jantimon/html-webpack-plugin) allowing you to **copy** and **inject** `assets` or `node_modules package assets`.
 
 Installation
 ------------
@@ -18,10 +18,23 @@ $ npm install --save-dev html-webpack-deploy-plugin
 
 ---
 
-Configuration
--------
+Integration
+-----------
 
-The plugin config is specified by an options **object** passed to its constructor.
+The **`chunksSortMode`** option of [html-webpack-plugin](https://github.com/jantimon/html-webpack-plugin) has a **default** value of `auto`.
+
+When this plugin is configured with the **`variableName`** or [tags plugin](https://github.com/jharris4/html-webpack-tags-plugin/) **`external`** tag options you need to set this value to **'none'**, like this:
+
+```js
+new HtmlWebpackPlugin({ chunksSortMode: 'none' })
+```
+
+This is only necessary if you are using the **`variableName`** or **`external`** tag options to strip packages out of the webpack bundles.
+
+Configuration
+-------------
+
+The plugin configuration is specified by an options **object** passed to its constructor.
 
 This object has an **`assets`** option for copying & injecting local files, and a **`packages`** option for copying & injecting packages from your local `node_modules` directory.
 
