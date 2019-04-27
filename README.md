@@ -110,6 +110,7 @@ These options are only available at the root level of the plugin config.
 |**`getPackagePath`**|`{Function}`|`see below`|The function to call to get the output path for a `package` & `version` when copying and injecting it|
 |**`findNodeModulesPath`**|`{Function}`|`see below`|The function to call to find the `node_modules` directory where packages to be deployed are installed. By default this searches upwards in the current working directory|
 |**`files`**|`{Array<String>}`|`[]`|If specified this plugin will only inject tags into the html-webpack-plugin instances that are injecting into these files  (uses [minimatch](https://github.com/isaacs/minimatch))|
+|**`prependExternals`**|`{Boolean}`|`true`|Whether to default **`append`** to **false** for any `<script>` `tag` that has an **`external`** or **`variableName`** option specified|
 
 
 ### All Level Options
