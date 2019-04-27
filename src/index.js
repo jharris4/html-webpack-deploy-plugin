@@ -32,6 +32,8 @@ const { isDefined, isArray, isObject, isString, isBoolean, isFunction } = IS;
 
 const isFunctionReturningString = v => isFunction(v) && isString(v('', '', '')); // 3rd string needed or this throws
 
+const isArrayOfString = v => isArray(v) && v.every(i => isString(i));
+
 const processShortcuts = (options, optionPath, keyShortcut, keyUse, keyAdd) => {
   const processedOptions = {};
   if (isDefined(options[keyUse]) || isDefined(options[keyAdd])) {
@@ -101,7 +103,7 @@ const getValidatedRootOptions = (options, optionPath, defaultRootOptions = DEFAU
     ...defaultRootOptions
   };
   const validatedMainOptions = getValidatedMainOptions(options, optionPath, defaultMainOptions);
-  const { assets, packages, getPackagePath, findNodeModulesPath } = options;
+  const { assets, packages, files, getPackagePath, findNodeModulesPath } = options;
 
   const assetsPathOptions = processShortcuts(options, optionPath, 'assetsPath', 'useAssetsPath', 'addAssetsPath');
   if (isDefined(assetsPathOptions.useAssetsPath)) {
@@ -124,6 +126,10 @@ const getValidatedRootOptions = (options, optionPath, defaultRootOptions = DEFAU
   if (isDefined(findNodeModulesPath)) {
     assert(isFunctionReturningString(findNodeModulesPath), `${optionPath}.findNodeModulesPath should be a function that returns a string`);
     validatedRootOptions.findNodeModulesPath = findNodeModulesPath;
+  }
+  if (isDefined(files)) {
+    assert((isString(files) || isArrayOfString(files)), `${optionPath}.files should be a string or array of strings`);
+    validatedRootOptions.files = files;
   }
   if (isDefined(assets)) {
     validatedRootOptions.assets = getValidatedAssetsOptions(assets, validatedRootOptions, validatedMainOptions, `${optionPath}.assets`);
@@ -297,7 +303,7 @@ function HtmlWebpackDeployPlugin (options) {
   const linkList = [];
   const scriptList = [];
   const validatedOptions = getValidatedRootOptions(options, `${PLUGIN_NAME}.options`);
-  const { assets, packages } = validatedOptions;
+  const { assets, packages, files } = validatedOptions;
   const addSection = section => {
     const { copy, links, scripts } = section;
     if (isDefined(copy)) {
@@ -322,12 +328,13 @@ function HtmlWebpackDeployPlugin (options) {
   this.options = {
     copy: copyList,
     links: linkList,
-    scripts: scriptList
+    scripts: scriptList,
+    files
   };
 }
 
 HtmlWebpackDeployPlugin.prototype.apply = function (compiler) {
-  let { copy, links, scripts } = this.options;
+  let { copy, links, scripts, files } = this.options;
   if (compiler.options.mode === 'development') {
     const applyDevPath = tag => {
       if (isDefined(tag.devPath) && !tag.useCdn) {
@@ -343,7 +350,7 @@ HtmlWebpackDeployPlugin.prototype.apply = function (compiler) {
     scripts = scripts.map(applyDevPath);
   }
   new CopyWebpackPlugin(copy).apply(compiler);
-  new HtmlWebpackTagsPlugin({ links, scripts }).apply(compiler);
+  new HtmlWebpackTagsPlugin({ links, scripts, files }).apply(compiler);
 };
 
 module.exports = HtmlWebpackDeployPlugin;

@@ -383,6 +383,74 @@ describe('end to end', () => {
   });
 
   describe('tags plugin passthrough options', () => {
+    describe('files', () => {
+      it('does not output when files is set to a different file', done => {
+        webpack(createWebpackConfig({
+          options: {
+            packagesPath: false,
+            packages: {
+              'bootstrap': {
+                copy: [{
+                  from: 'dist/css', to: 'css/'
+                }],
+                links: [
+                  'css/bootstrap.min.css'
+                ]
+              }
+            },
+            files: 'index_123'
+          }
+        }), (err, result) => {
+          expect(err).toBeFalsy();
+          expect(JSON.stringify(result.compilation.errors)).toBe('[]');
+          expect(areEqualDirectories('../node_modules/bootstrap/dist/css', `${OUTPUT_DIR}/bootstrap-${BSV}/css`)).toBe(true);
+          cheerioLoadTags(OUPUT_HTML_FILE, ({ links, scripts, data }) => {
+            expect(links.length).toBe(1);
+            expect(scripts.length).toBe(2);
+            expect(links).toContainTag({ tagName: 'link', attributes: { 'href': 'style.css', 'rel': 'stylesheet' } });
+            expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'app.js', 'type': 'text/javascript' } });
+            expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'style.js', 'type': 'text/javascript' } });
+
+            done();
+          });
+        });
+      });
+
+      // TODO - same/dif mixup
+      it('does output when files is set to the same file', done => {
+        webpack(createWebpackConfig({
+          options: {
+            packagesPath: false,
+            packages: {
+              'bootstrap': {
+                copy: [{
+                  from: 'dist/css', to: 'css/'
+                }],
+                links: [
+                  'css/bootstrap.min.css'
+                ]
+              }
+            },
+            files: 'index.html'
+          }
+        }), (err, result) => {
+          expect(err).toBeFalsy();
+          expect(JSON.stringify(result.compilation.errors)).toBe('[]');
+          expect(areEqualDirectories('../node_modules/bootstrap/dist/css', `${OUTPUT_DIR}/bootstrap-${BSV}/css`)).toBe(true);
+          cheerioLoadTags(OUPUT_HTML_FILE, ({ links, scripts, data }) => {
+            expect(links.length).toBe(2);
+            expect(scripts.length).toBe(2);
+            expect(links).toContainTag({ tagName: 'link', attributes: { 'href': 'style.css', 'rel': 'stylesheet' } });
+            expect(links[1]).toBeTag({ tagName: 'link', attributes: { 'href': `bootstrap-${BSV}/css/bootstrap.min.css`, 'rel': 'stylesheet' } });
+            expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'app.js', 'type': 'text/javascript' } });
+            expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'style.js', 'type': 'text/javascript' } });
+
+            done();
+          });
+        });
+      });
+    });
+
     describe('append', () => {
       describe('root level', () => {
         const baseOptions = {
