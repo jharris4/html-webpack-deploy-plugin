@@ -103,7 +103,7 @@ const getValidatedRootOptions = (options, optionPath, defaultRootOptions = DEFAU
     ...defaultRootOptions
   };
   const validatedMainOptions = getValidatedMainOptions(options, optionPath, defaultMainOptions);
-  const { assets, packages, files, getPackagePath, findNodeModulesPath } = options;
+  const { assets, packages, files, getPackagePath, findNodeModulesPath, prependExternals } = options;
 
   const assetsPathOptions = processShortcuts(options, optionPath, 'assetsPath', 'useAssetsPath', 'addAssetsPath');
   if (isDefined(assetsPathOptions.useAssetsPath)) {
@@ -126,6 +126,10 @@ const getValidatedRootOptions = (options, optionPath, defaultRootOptions = DEFAU
   if (isDefined(findNodeModulesPath)) {
     assert(isFunctionReturningString(findNodeModulesPath), `${optionPath}.findNodeModulesPath should be a function that returns a string`);
     validatedRootOptions.findNodeModulesPath = findNodeModulesPath;
+  }
+  if (isDefined(prependExternals)) {
+    assert(isBoolean(prependExternals), `${optionPath}.prependExternals should be a boolean`);
+    validatedRootOptions.prependExternals = prependExternals;
   }
   if (isDefined(files)) {
     assert((isString(files) || isArrayOfString(files)), `${optionPath}.files should be a string or array of strings`);
@@ -303,7 +307,7 @@ function HtmlWebpackDeployPlugin (options) {
   const linkList = [];
   const scriptList = [];
   const validatedOptions = getValidatedRootOptions(options, `${PLUGIN_NAME}.options`);
-  const { assets, packages, files } = validatedOptions;
+  const { assets, packages, files, prependExternals } = validatedOptions;
   const addSection = section => {
     const { copy, links, scripts } = section;
     if (isDefined(copy)) {
@@ -329,12 +333,13 @@ function HtmlWebpackDeployPlugin (options) {
     copy: copyList,
     links: linkList,
     scripts: scriptList,
-    files
+    files,
+    prependExternals
   };
 }
 
 HtmlWebpackDeployPlugin.prototype.apply = function (compiler) {
-  let { copy, links, scripts, files } = this.options;
+  let { copy, links, scripts, files, prependExternals } = this.options;
   if (compiler.options.mode === 'development') {
     const applyDevPath = tag => {
       if (isDefined(tag.devPath) && !tag.useCdn) {
@@ -350,7 +355,7 @@ HtmlWebpackDeployPlugin.prototype.apply = function (compiler) {
     scripts = scripts.map(applyDevPath);
   }
   new CopyWebpackPlugin(copy).apply(compiler);
-  new HtmlWebpackTagsPlugin({ links, scripts, files }).apply(compiler);
+  new HtmlWebpackTagsPlugin({ links, scripts, files, prependExternals }).apply(compiler);
 };
 
 module.exports = HtmlWebpackDeployPlugin;

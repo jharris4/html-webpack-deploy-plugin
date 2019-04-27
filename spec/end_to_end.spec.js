@@ -922,7 +922,7 @@ describe('end to end', () => {
           expect(links[1]).toBeTag({ tagName: 'link', attributes: { 'href': `packages/bootstrap-${BSV}/css/bootstrap.min.css`, 'rel': 'stylesheet' } });
           expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'app.js', 'type': 'text/javascript' } });
           expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'style.js', 'type': 'text/javascript' } });
-          expect(scripts[2]).toBeTag({ tagName: 'script', attributes: { 'src': `packages/bootstrap-${BSV}/js/bootstrap.bundle.min.js` } });
+          expect(scripts[0]).toBeTag({ tagName: 'script', attributes: { 'src': `packages/bootstrap-${BSV}/js/bootstrap.bundle.min.js` } });
 
           done();
         });
