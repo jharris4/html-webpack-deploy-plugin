@@ -90,8 +90,10 @@ These options are only available at the root level of the plugin config.
 |**`packages`**|`{Object}`|`undefined`|The `node_modules` packages to copy into the webpack output directory and inject into the template html file|
 |**`useAssetsPath`**|`{Boolean}`|`true`|Whether or not to prefix all assets with the `assetsPath`|
 |**`addAssetsPath`**|`{Function}`|`see below`|The function to call to get the output path for assets when copying and injecting them|
+|**`assetsPath`**|`{Boolean|String|Function}`|Shortcut for specifying both **`useAssetsPath`** and **`addAssetsPath`** at the same time|
 |**`usePackagesPath`**|`{Boolean}`|`true`|Whether or not to prefix all packages with the `packagesPath`|
 |**`addPackagesPath`**|`{Function}`|`see below`|The function to call to get the output path for `packages` when copying and injecting them|
+|**`packagesPath`**|`{Boolean|String|Function}`|Shortcut for specifying both **`usePackagesPath`** and **`addPackagesPath`** at the same time|
 |**`getPackagePath`**|`{Function}`|`see below`|The function to call to get the output path for a `package` & `version` when copying and injecting it|
 |**`findNodeModulesPath`**|`{Function}`|`see below`|The function to call to find the `node_modules` directory where packages to be deployed are installed. By default this searches upwards in the current working directory|
 |**`files`**|`{Array<String>}`|`[]`|If specified this plugin will only inject tags into the html-webpack-plugin instances that are injecting into these files  (uses [minimatch](https://github.com/isaacs/minimatch))|
@@ -411,4 +413,92 @@ The generated `index.html` looks like:
   <!-- react & react-dom were removed from webpack bundles automatically -->
  </body>
 </html>
+```
+
+---
+
+### Non CDN Options
+
+When doing custom deployment without a CDN it can be useful to configure the directories that all assets and packages are copied to and served from.
+
+The following examples show some useful settings for such situations.
+
+---
+
+Disabling the grouping of assets into the `assets` directory:
+
+```js
+new HtmlWebpackDeployAssetsPlugin({ useAssetsPath: false });
+```
+
+```html
+<link href="my-public-path/assets/file.css">
+<script src="my-public-path/assets/file.js"></script>
+```
+
+becomes:
+
+```html
+<link href="my-public-path/file.css">
+<script src="my-public-path/file.js"></script>
+```
+
+---
+
+Custom grouping of assets into a `configurable` directory:
+
+```js
+new HtmlWebpackDeployAssetsPlugin({ assetsPath: 'my-assets-path' });
+```
+
+```html
+<link href="my-public-path/assets/file.css">
+<script src="my-public-path/assets/file.js"></script>
+```
+
+becomes:
+
+```html
+<link href="my-public-path/my-assets-path/file.css">
+<script src="my-public-path/my-assets-path/file.js"></script>
+```
+
+---
+
+Disabling the grouping of packages into the `packages` directory:
+
+```js
+new HtmlWebpackDeployAssetsPlugin({ usePackagesPath: false });
+```
+
+```html
+<link href="my-public-path/packages/bootstrap-4.3.1/bootstrap.min.css">
+<script src="my-public-path/packages/react-16.8.6/react.production.min.js"></script>
+```
+
+becomes:
+
+```html
+<link href="my-public-path/bootstrap-4.3.1/bootstrap.min.css">
+<script src="my-public-path/react-16.8.6/react.production.min.js"></script>
+```
+
+---
+
+Custom grouping of packages into a `configurable` directory:
+
+```js
+new HtmlWebpackDeployAssetsPlugin({ packagesPath: 'my-packages-path' });
+```
+
+```html
+<link href="my-public-path/packages/bootstrap-4.3.1/bootstrap.min.css">
+<script src="my-public-path/packages/react-16.8.6/react.production.min.js"></script>
+```
+
+becomes:
+
+```html
+<link href="my-public-path/my-packages-path/bootstrap-4.3.1/bootstrap.min.css">
+<script src="my-public-path/my-packages-path/react-16.8.6/react.production.min.js"></script>
 ```
