@@ -36,9 +36,9 @@ const DEFAULT_OPTIONS = {
   append: false,
   assets: {},
   packages: {},
-  addAssetPath: assetPath => path.join('assets', assetPath),
-  addPackagePath: (packageName, packageVersion, packagePath) => path.join('packages', packageName + '-' + packageVersion, packagePath),
-  findPackagePath: (cwd, packageName) => findUp.sync(slash(path.join('node_modules', packageName)), { cwd }),
+  addAssetsPath: assetPath => path.join('assets', assetPath),
+  addPackagesPath: (packageName, packageVersion, packagePath) => path.join('packages', packageName + '-' + packageVersion, packagePath),
+  findNodeModulesPath: (cwd, packageName) => findUp.sync(slash(path.join('node_modules', packageName)), { cwd }),
   useCdn: false,
   getCdnPath: (packageName, packageVersion, packagePath) => `https://unpkg.com/${packageName}@${packageVersion}/${packagePath}`
 };
@@ -56,8 +56,8 @@ The available options are:
 |**`append`**|`{Boolean}`|`false`|Whether to prepend or append the injected tags relative to any existing tags (should be set to **false** when using any `script` tag asset **`external`**) |
 |**`assets`**|`{Object}`|`undefined`|The local assets to copy into the webpack output directory and inject into the template html file|
 |**`packages`**|`{Object}`|`undefined`|The `node_modules` packages to copy into the webpack output directory and inject into the template html file|
-|**`addAssetPath`**|`{Function}`|`see above`|The function to call to get the output path for `assets` when copying and injecting them|
-|**`addPackagePath`**|`{Function}`|`see above`|The function to call to get the output path for `packages` when copying and injecting them|
+|**`addAssetsPath`**|`{Function}`|`see above`|The function to call to get the output path for `assets` when copying and injecting them|
+|**`addPackagesPath`**|`{Function}`|`see above`|The function to call to get the output path for `packages` when copying and injecting them|
 |**`useCdn`**|`{Boolean}`|`false`|Whether or not to use the **`getCdnPath`** to replace the asset paths with their `cdn urls`|
 |**`getCdnPath`**|`{Function}`|`see above`|The function to use when replacing asset paths with `cdn urls`|
 

@@ -15,13 +15,11 @@ const { getValidatedOptions, IS } = HtmlWebpackTagsPlugin.api;
 const DEFAULT_ROOT_OPTIONS = {
   assets: {},
   packages: {},
-  // TODO - idea for shortcut like hash / publicPath on tags
-  // assetPath: 'my-assets' (string)
-  // assetPath: ''/false? (disable)
-  // assetPath: assetPath => path.join('assets', assetPath) // (function)
-  addAssetPath: assetPath => path.join('assets', assetPath),
-  addPackagePath: (packageName, packageVersion, packagePath) => path.join('packages', packageName + '-' + packageVersion, packagePath),
-  findPackagePath: (cwd, packageName) => findUp.sync(slash(path.join('node_modules', packageName)), { cwd })
+  useAssetPath: true,
+  addAssetsPath: assetPath => path.join('assets', assetPath),
+  usePackagePath: true,
+  addPackagesPath: (packageName, packageVersion, packagePath) => path.join('packages', packageName + '-' + packageVersion, packagePath),
+  findNodeModulesPath: (cwd, packageName) => findUp.sync(slash(path.join('node_modules', packageName)), { cwd })
 };
 
 const DEFAULT_MAIN_OPTIONS = {
@@ -32,6 +30,36 @@ const DEFAULT_MAIN_OPTIONS = {
 const { isDefined, isArray, isObject, isString, isBoolean, isFunction } = IS;
 
 const isFunctionReturningString = v => isFunction(v) && isString(v('', '', '')); // 3rd string needed or this throws
+
+// TODO - processShortcuts copied verbatim from tags-plugin and perhaps should be made available through the api.
+const processShortcuts = (options, optionPath, keyShortcut, keyUse, keyAdd, add) => {
+  const processedOptions = {};
+  if (isDefined(options[keyUse]) || isDefined(options[keyAdd])) {
+    assert(!isDefined(options[keyShortcut]), `${optionPath}.${keyShortcut} should not be used with either ${keyUse} or ${keyAdd}`);
+    if (isDefined(options[keyUse])) {
+      assert(isBoolean(options[keyUse]), `${optionPath}.${keyUse} should be a boolean`);
+      processedOptions[keyUse] = options[keyUse];
+    }
+    if (isDefined(options[keyAdd])) {
+      assert(isFunctionReturningString(options[keyAdd]), `${optionPath}.${keyAdd} should be a function that returns a string`);
+      processedOptions[keyAdd] = options[keyAdd];
+    }
+  } else if (isDefined(options[keyShortcut])) {
+    const shortcut = options[keyShortcut];
+    assert(isBoolean(shortcut) || isString(shortcut) || isFunctionReturningString(shortcut),
+      `${optionPath}.${keyShortcut} should be a boolean or a string or a function that returns a string`);
+    if (isBoolean(shortcut)) {
+      processedOptions[keyUse] = shortcut;
+    } else if (isString(shortcut)) {
+      processedOptions[keyUse] = true;
+      processedOptions[keyAdd] = path => add(path, shortcut);
+    } else {
+      processedOptions[keyUse] = true;
+      processedOptions[keyAdd] = shortcut;
+    }
+  }
+  return processedOptions;
+};
 
 const getGroupLevelOptions = (options, optionPath, defaultOptions = {}) => {
   if (isObject(options)) {
@@ -73,20 +101,28 @@ const getValidatedRootOptions = (options, optionPath, defaultRootOptions = DEFAU
     ...defaultRootOptions
   };
   const validatedMainOptions = getValidatedMainOptions(options, optionPath, defaultMainOptions);
-  const { assets, packages, addAssetPath, addPackagePath, findPackagePath } = options;
+  const { assets, packages, findNodeModulesPath } = options;
 
-  if (isDefined(addAssetPath)) {
-    assert(isFunctionReturningString(addAssetPath), `${optionPath}.addAssetPath should be a function that returns a string`);
-    validatedRootOptions.addAssetPath = addAssetPath;
+  const assetsPathOptions = processShortcuts(options, optionPath, 'assetsPath', 'useAssetsPath', 'addAssetsPath', DEFAULT_ROOT_OPTIONS.addAssetsPath);
+  if (isDefined(assetsPathOptions.useAssetsPath)) {
+    validatedRootOptions.useAssetsPath = assetsPathOptions.useAssetsPath;
   }
-  if (isDefined(addPackagePath)) {
-    assert(isFunctionReturningString(addPackagePath), `${optionPath}.addPackagePath should be a function that returns a string`);
-    validatedRootOptions.addPackagePath = addPackagePath;
+  if (isDefined(assetsPathOptions.addAssetsPath)) {
+    validatedRootOptions.addAssetsPath = assetsPathOptions.addAssetsPath;
   }
-  if (isDefined(findPackagePath)) {
-    assert(isFunctionReturningString(findPackagePath), `${optionPath}.findPackagePath should be a function that returns a string`);
-    validatedRootOptions.findPackagePath = findPackagePath;
+  const packagesPathOptions = processShortcuts(options, optionPath, 'packagesPath', 'usePackagesPath', 'addPackagesPath', DEFAULT_ROOT_OPTIONS.addPackagesPath);
+  if (isDefined(packagesPathOptions.usePackagesPath)) {
+    validatedRootOptions.usePackagesPath = packagesPathOptions.usePackagesPath;
   }
+  if (isDefined(packagesPathOptions.addPackagesPath)) {
+    validatedRootOptions.addPackagesPath = packagesPathOptions.addPackagesPath;
+  }
+
+  if (isDefined(findNodeModulesPath)) {
+    assert(isFunctionReturningString(findNodeModulesPath), `${optionPath}.findNodeModulesPath should be a function that returns a string`);
+    validatedRootOptions.findNodeModulesPath = findNodeModulesPath;
+  }
+
   if (isDefined(assets)) {
     validatedRootOptions.assets = getValidatedAssetsOptions(assets, validatedRootOptions, validatedMainOptions, `${optionPath}.assets`);
   }
@@ -99,33 +135,33 @@ const getValidatedRootOptions = (options, optionPath, defaultRootOptions = DEFAU
 
 const getValidatedAssetsOptions = (assets, rootOptions, mainOptions, optionPath) => {
   const validatedAssets = getTagsLevelOptions(assets, optionPath);
-  const { addAssetPath } = rootOptions;
+  const { addAssetsPath } = rootOptions;
   const { copy, links, scripts, ...assetsOptions } = validatedAssets;
 
   const baseOptions = { ...mainOptions, ...assetsOptions };
 
   // TODO - make sure the merging here is working properly
-  const addAssetPaths = (tag, optionName) => {
+  const addAssetsPaths = (tag, optionName) => {
     const newTag = {
       ...baseOptions,
       ...tag,
-      path: addAssetPath(tag.path)
+      path: addAssetsPath(tag.path)
     };
     if (isDefined(tag.devPath)) {
       assert(isString(tag.devPath), `${optionPath}.${optionName}.devPath should be a string`);
-      newTag.devPath = addAssetPath(tag.devPath);
+      newTag.devPath = addAssetsPath(tag.devPath);
     }
     return newTag;
   };
-  const getAddAssetPaths = optionName => tag => addAssetPaths(tag, optionName);
+  const getAddAssetsPaths = optionName => tag => addAssetsPaths(tag, optionName);
   if (isDefined(copy)) {
-    validatedAssets.copy = copy.map(copy => ({ ...copy, to: addAssetPath(copy.to) }));
+    validatedAssets.copy = copy.map(copy => ({ ...copy, to: addAssetsPath(copy.to) }));
   }
   if (isDefined(links)) {
-    validatedAssets.links = links.map(getAddAssetPaths('links'));
+    validatedAssets.links = links.map(getAddAssetsPaths('links'));
   }
   if (isDefined(scripts)) {
-    validatedAssets.scripts = scripts.map(getAddAssetPaths('scripts'));
+    validatedAssets.scripts = scripts.map(getAddAssetsPaths('scripts'));
   }
   return validatedAssets;
 };
@@ -162,8 +198,8 @@ const getValidatedPackageOptions = (thePackage, packageName, rootOptions, mainOp
   optionPath = `${optionPath}.${packageName}`;
   const validatedPackage = getValidatedCdnOptions(getTagsLevelOptions(thePackage, optionPath), optionPath, mainOptions);
   const { copy, links, scripts, ...packageOptions } = validatedPackage;
-  const { findPackagePath, addPackagePath } = rootOptions;
-  const packagePath = findPackagePath(process.cwd(), packageName);
+  const { findNodeModulesPath, addPackagesPath } = rootOptions;
+  const packagePath = findNodeModulesPath(process.cwd(), packageName);
   assert(isString(packagePath), `${optionPath} package path could not be found`);
   const packageFilePath = path.join(packagePath, 'package.json');
   let packageNpmPackage;
@@ -183,7 +219,7 @@ const getValidatedPackageOptions = (thePackage, packageName, rootOptions, mainOp
     validatedPackage.copy = copy.map(copyItem => ({
       ...copyItem,
       from: path.join(packagePath, copyItem.from),
-      to: addPackagePath(packageName, packageVersion, copyItem.to)
+      to: addPackagesPath(packageName, packageVersion, copyItem.to)
     }));
   }
 
@@ -233,10 +269,10 @@ const getValidatedPackageOptions = (thePackage, packageName, rootOptions, mainOp
     } else {
       newTag = {
         ...newTag,
-        path: addPackagePath(packageName, packageVersion, tag.path)
+        path: addPackagesPath(packageName, packageVersion, tag.path)
       };
       if (isDefined(tag.devPath)) {
-        newTag.devPath = addPackagePath(packageName, packageVersion, tag.devPath);
+        newTag.devPath = addPackagesPath(packageName, packageVersion, tag.devPath);
       }
     }
     return newTag;

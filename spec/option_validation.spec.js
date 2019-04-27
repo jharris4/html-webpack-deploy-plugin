@@ -514,62 +514,62 @@ describe('option validation', () => {
     });
   });
 
-  describe('options.addAssetPath', () => {
-    it('should throw an error if the addAssetPath is not a function', done => {
+  describe('options.addAssetsPath', () => {
+    it('should throw an error if the addAssetsPath is not a function', done => {
       const theFunction = () => {
-        return new HtmlWebpackDeployPlugin({ addAssetPath: 'hello' });
+        return new HtmlWebpackDeployPlugin({ addAssetsPath: 'hello' });
       };
 
-      expect(theFunction).toThrowError(/(options.addAssetPath should be a function)/);
+      expect(theFunction).toThrowError(/(options.addAssetsPath should be a function)/);
       done();
     });
 
-    it('should throw an error if the addAssetPath is not a function that returns a string', done => {
+    it('should throw an error if the addAssetsPath is not a function that returns a string', done => {
       const theFunction = () => {
-        return new HtmlWebpackDeployPlugin({ addAssetPath: () => null });
+        return new HtmlWebpackDeployPlugin({ addAssetsPath: () => null });
       };
 
-      expect(theFunction).toThrowError(/(options.addAssetPath should be a function that returns a string)/);
-      done();
-    });
-  });
-
-  describe('options.addPackagePath', () => {
-    it('should throw an error if the addPackagePath is not a function', done => {
-      const theFunction = () => {
-        return new HtmlWebpackDeployPlugin({ addPackagePath: 'hello' });
-      };
-
-      expect(theFunction).toThrowError(/(options.addPackagePath should be a function)/);
-      done();
-    });
-
-    it('should throw an error if the addPackagePath is not a function that returns a string', done => {
-      const theFunction = () => {
-        return new HtmlWebpackDeployPlugin({ addPackagePath: () => null });
-      };
-
-      expect(theFunction).toThrowError(/(options.addPackagePath should be a function that returns a string)/);
+      expect(theFunction).toThrowError(/(options.addAssetsPath should be a function that returns a string)/);
       done();
     });
   });
 
-  describe('options.findPackagePath', () => {
-    it('should throw an error if the findPackagePath is not a function', done => {
+  describe('options.addPackagesPath', () => {
+    it('should throw an error if the addPackagesPath is not a function', done => {
       const theFunction = () => {
-        return new HtmlWebpackDeployPlugin({ findPackagePath: 'hello' });
+        return new HtmlWebpackDeployPlugin({ addPackagesPath: 'hello' });
       };
 
-      expect(theFunction).toThrowError(/(options.findPackagePath should be a function)/);
+      expect(theFunction).toThrowError(/(options.addPackagesPath should be a function)/);
       done();
     });
 
-    it('should throw an error if the findPackagePath is not a function that returns a string', done => {
+    it('should throw an error if the addPackagesPath is not a function that returns a string', done => {
       const theFunction = () => {
-        return new HtmlWebpackDeployPlugin({ findPackagePath: () => null });
+        return new HtmlWebpackDeployPlugin({ addPackagesPath: () => null });
       };
 
-      expect(theFunction).toThrowError(/(options.findPackagePath should be a function that returns a string)/);
+      expect(theFunction).toThrowError(/(options.addPackagesPath should be a function that returns a string)/);
+      done();
+    });
+  });
+
+  describe('options.findNodeModulesPath', () => {
+    it('should throw an error if the findNodeModulesPath is not a function', done => {
+      const theFunction = () => {
+        return new HtmlWebpackDeployPlugin({ findNodeModulesPath: 'hello' });
+      };
+
+      expect(theFunction).toThrowError(/(options.findNodeModulesPath should be a function)/);
+      done();
+    });
+
+    it('should throw an error if the findNodeModulesPath is not a function that returns a string', done => {
+      const theFunction = () => {
+        return new HtmlWebpackDeployPlugin({ findNodeModulesPath: () => null });
+      };
+
+      expect(theFunction).toThrowError(/(options.findNodeModulesPath should be a function that returns a string)/);
       done();
     });
   });

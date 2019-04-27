@@ -552,7 +552,7 @@ describe('end to end', () => {
       });
     });
 
-    it('it uses a custom addPackagePath option ', done => {
+    it('it uses a custom addPackagesPath option ', done => {
       webpack(createWebpackConfig({
         options: {
           packages: {
@@ -565,7 +565,7 @@ describe('end to end', () => {
               ]
             }
           },
-          addPackagePath: (packageName, packageVersion, packagePath) => path.join('my-packages', packageName + '-' + packageVersion, packagePath)
+          addPackagesPath: (packageName, packageVersion, packagePath) => path.join('my-packages', packageName + '-' + packageVersion, packagePath)
         }
       }), (err, result) => {
         expect(err).toBeFalsy();
@@ -856,7 +856,7 @@ describe('end to end', () => {
       });
     });
 
-    it('uses a custom findPackagePath option', done => {
+    it('uses a custom findNodeModulesPath option', done => {
       webpack(createWebpackConfig({
         options: {
           packages: {
@@ -869,7 +869,7 @@ describe('end to end', () => {
               ]
             }
           },
-          findPackagePath: (cwd, packageName) => path.join(FIXTURES_PATH, 'node_modules', packageName)
+          findNodeModulesPath: (cwd, packageName) => path.join(FIXTURES_PATH, 'node_modules', packageName)
         }
       }), (err, result) => {
         expect(err).toBeFalsy();
@@ -1045,7 +1045,7 @@ describe('end to end', () => {
       });
     });
 
-    it('it uses a custom addAssetPath option ', done => {
+    it('it uses a custom addAssetsPath option ', done => {
       webpack(createWebpackConfig({
         webpackPublicPath: '/public-path/',
         options: {
@@ -1059,7 +1059,7 @@ describe('end to end', () => {
               }
             ]
           },
-          addAssetPath: assetPath => path.join('my-assets', assetPath)
+          addAssetsPath: assetPath => path.join('my-assets', assetPath)
         }
       }), (err, result) => {
         expect(err).toBeFalsy();
