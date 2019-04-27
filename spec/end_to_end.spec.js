@@ -132,18 +132,252 @@ describe('end to end', () => {
     rimraf(OUTPUT_DIR, done);
   });
 
-  it('it does nothing for empty options', done => {
-    webpack(createWebpackConfig(), (err, result) => {
-      expect(err).toBeFalsy();
-      expect(JSON.stringify(result.compilation.errors)).toBe('[]');
-      cheerioLoadTags(OUPUT_HTML_FILE, ({ links, scripts }) => {
-        expect(links.length).toBe(1);
-        expect(scripts.length).toBe(2);
-        expect(links).toContainTag({ tagName: 'link', attributes: { 'href': 'style.css', 'rel': 'stylesheet' } });
-        expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'app.js', 'type': 'text/javascript' } });
-        expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'style.js', 'type': 'text/javascript' } });
+  describe('options', () => {
+    it('it does nothing for empty options', done => {
+      webpack(createWebpackConfig(), (err, result) => {
+        expect(err).toBeFalsy();
+        expect(JSON.stringify(result.compilation.errors)).toBe('[]');
+        cheerioLoadTags(OUPUT_HTML_FILE, ({ links, scripts }) => {
+          expect(links.length).toBe(1);
+          expect(scripts.length).toBe(2);
+          expect(links).toContainTag({ tagName: 'link', attributes: { 'href': 'style.css', 'rel': 'stylesheet' } });
+          expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'app.js', 'type': 'text/javascript' } });
+          expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'style.js', 'type': 'text/javascript' } });
 
-        done();
+          done();
+        });
+      });
+    });
+
+    it('uses a boolean true assetsPath', done => {
+      webpack(createWebpackConfig({
+        options: {
+          assetsPath: true,
+          assets: {
+            copy: [{ from: 'spec/fixtures/assets/foo.js', to: 'foo.js' }],
+            scripts: 'foo.js'
+          }
+        }
+      }), (err, result) => {
+        expect(err).toBeFalsy();
+        expect(JSON.stringify(result.compilation.errors)).toBe('[]');
+        expect(areEqualDirectories('fixtures/assets', `${OUTPUT_DIR}/assets`, { files: ['foo.js'] })).toBe(true);
+        cheerioLoadTags(OUPUT_HTML_FILE, ({ links, scripts }) => {
+          expect(links.length).toBe(1);
+          expect(scripts.length).toBe(3);
+          expect(links).toContainTag({ tagName: 'link', attributes: { 'href': 'style.css', 'rel': 'stylesheet' } });
+          expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'app.js', 'type': 'text/javascript' } });
+          expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'style.js', 'type': 'text/javascript' } });
+          expect(scripts[2]).toBeTag({ tagName: 'script', attributes: { 'src': `assets/foo.js`, 'type': 'text/javascript' } });
+
+          done();
+        });
+      });
+    });
+
+    it('uses a boolean false assetsPath', done => {
+      webpack(createWebpackConfig({
+        options: {
+          assetsPath: false,
+          assets: {
+            copy: [{ from: 'spec/fixtures/assets/foo.js', to: 'foo.js' }],
+            scripts: 'foo.js'
+          }
+        }
+      }), (err, result) => {
+        expect(err).toBeFalsy();
+        expect(JSON.stringify(result.compilation.errors)).toBe('[]');
+        expect(areEqualDirectories('fixtures/assets', `${OUTPUT_DIR}`, { files: ['foo.js'] })).toBe(true);
+        cheerioLoadTags(OUPUT_HTML_FILE, ({ links, scripts, data }) => {
+          expect(links.length).toBe(1);
+          expect(scripts.length).toBe(3);
+          expect(links).toContainTag({ tagName: 'link', attributes: { 'href': 'style.css', 'rel': 'stylesheet' } });
+          expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'app.js', 'type': 'text/javascript' } });
+          expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'style.js', 'type': 'text/javascript' } });
+          expect(scripts[2]).toBeTag({ tagName: 'script', attributes: { 'src': `foo.js`, 'type': 'text/javascript' } });
+
+          done();
+        });
+      });
+    });
+
+    it('uses a string assetsPath', done => {
+      webpack(createWebpackConfig({
+        options: {
+          assetsPath: 'my-assets-path',
+          assets: {
+            copy: [{ from: 'spec/fixtures/assets/foo.js', to: 'foo.js' }],
+            scripts: 'foo.js'
+          }
+        }
+      }), (err, result) => {
+        expect(err).toBeFalsy();
+        expect(JSON.stringify(result.compilation.errors)).toBe('[]');
+        expect(areEqualDirectories('fixtures/assets', `${OUTPUT_DIR}/my-assets-path`, { files: ['foo.js'] })).toBe(true);
+        cheerioLoadTags(OUPUT_HTML_FILE, ({ links, scripts }) => {
+          expect(links.length).toBe(1);
+          expect(scripts.length).toBe(3);
+          expect(links).toContainTag({ tagName: 'link', attributes: { 'href': 'style.css', 'rel': 'stylesheet' } });
+          expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'app.js', 'type': 'text/javascript' } });
+          expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'style.js', 'type': 'text/javascript' } });
+          expect(scripts[2]).toBeTag({ tagName: 'script', attributes: { 'src': `my-assets-path/foo.js`, 'type': 'text/javascript' } });
+
+          done();
+        });
+      });
+    });
+
+    it('uses a function assetsPath', done => {
+      webpack(createWebpackConfig({
+        options: {
+          assetsPath: assetPath => path.join('func-assets', assetPath),
+          assets: {
+            copy: [{ from: 'spec/fixtures/assets/foo.js', to: 'foo.js' }],
+            scripts: 'foo.js'
+          }
+        }
+      }), (err, result) => {
+        expect(err).toBeFalsy();
+        expect(JSON.stringify(result.compilation.errors)).toBe('[]');
+        expect(areEqualDirectories('fixtures/assets', `${OUTPUT_DIR}/func-assets`, { files: ['foo.js'] })).toBe(true);
+        cheerioLoadTags(OUPUT_HTML_FILE, ({ links, scripts }) => {
+          expect(links.length).toBe(1);
+          expect(scripts.length).toBe(3);
+          expect(links).toContainTag({ tagName: 'link', attributes: { 'href': 'style.css', 'rel': 'stylesheet' } });
+          expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'app.js', 'type': 'text/javascript' } });
+          expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'style.js', 'type': 'text/javascript' } });
+          expect(scripts[2]).toBeTag({ tagName: 'script', attributes: { 'src': `func-assets/foo.js`, 'type': 'text/javascript' } });
+
+          done();
+        });
+      });
+    });
+
+    it('uses a boolean true packagesPath', done => {
+      webpack(createWebpackConfig({
+        options: {
+          packagesPath: true,
+          packages: {
+            'bootstrap': {
+              copy: [{
+                from: 'dist/css', to: 'css/'
+              }],
+              links: [
+                'css/bootstrap.min.css'
+              ]
+            }
+          }
+        }
+      }), (err, result) => {
+        expect(err).toBeFalsy();
+        expect(JSON.stringify(result.compilation.errors)).toBe('[]');
+        expect(areEqualDirectories('../node_modules/bootstrap/dist/css', `${OUTPUT_DIR}/packages/bootstrap-${BSV}/css`)).toBe(true);
+        cheerioLoadTags(OUPUT_HTML_FILE, ({ links, scripts }) => {
+          expect(links.length).toBe(2);
+          expect(scripts.length).toBe(2);
+          expect(links).toContainTag({ tagName: 'link', attributes: { 'href': 'style.css', 'rel': 'stylesheet' } });
+          expect(links[1]).toBeTag({ tagName: 'link', attributes: { 'href': `packages/bootstrap-${BSV}/css/bootstrap.min.css`, 'rel': 'stylesheet' } });
+          expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'app.js', 'type': 'text/javascript' } });
+          expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'style.js', 'type': 'text/javascript' } });
+
+          done();
+        });
+      });
+    });
+
+    it('uses a boolean false packagesPath', done => {
+      webpack(createWebpackConfig({
+        options: {
+          packagesPath: false,
+          packages: {
+            'bootstrap': {
+              copy: [{
+                from: 'dist/css', to: 'css/'
+              }],
+              links: [
+                'css/bootstrap.min.css'
+              ]
+            }
+          }
+        }
+      }), (err, result) => {
+        expect(err).toBeFalsy();
+        expect(JSON.stringify(result.compilation.errors)).toBe('[]');
+        expect(areEqualDirectories('../node_modules/bootstrap/dist/css', `${OUTPUT_DIR}/bootstrap-${BSV}/css`)).toBe(true);
+        cheerioLoadTags(OUPUT_HTML_FILE, ({ links, scripts, data }) => {
+          expect(links.length).toBe(2);
+          expect(scripts.length).toBe(2);
+          expect(links).toContainTag({ tagName: 'link', attributes: { 'href': 'style.css', 'rel': 'stylesheet' } });
+          expect(links[1]).toBeTag({ tagName: 'link', attributes: { 'href': `bootstrap-${BSV}/css/bootstrap.min.css`, 'rel': 'stylesheet' } });
+          expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'app.js', 'type': 'text/javascript' } });
+          expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'style.js', 'type': 'text/javascript' } });
+
+          done();
+        });
+      });
+    });
+
+    it('uses a string packagesPath', done => {
+      webpack(createWebpackConfig({
+        options: {
+          packagesPath: 'my-packages-path',
+          packages: {
+            'bootstrap': {
+              copy: [{
+                from: 'dist/css', to: 'css/'
+              }],
+              links: [
+                'css/bootstrap.min.css'
+              ]
+            }
+          }
+        }
+      }), (err, result) => {
+        expect(err).toBeFalsy();
+        expect(JSON.stringify(result.compilation.errors)).toBe('[]');
+        expect(areEqualDirectories('../node_modules/bootstrap/dist/css', `${OUTPUT_DIR}/my-packages-path/bootstrap-${BSV}/css`)).toBe(true);
+        cheerioLoadTags(OUPUT_HTML_FILE, ({ links, scripts }) => {
+          expect(links.length).toBe(2);
+          expect(scripts.length).toBe(2);
+          expect(links).toContainTag({ tagName: 'link', attributes: { 'href': 'style.css', 'rel': 'stylesheet' } });
+          expect(links[1]).toBeTag({ tagName: 'link', attributes: { 'href': `my-packages-path/bootstrap-${BSV}/css/bootstrap.min.css`, 'rel': 'stylesheet' } });
+          expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'app.js', 'type': 'text/javascript' } });
+          expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'style.js', 'type': 'text/javascript' } });
+
+          done();
+        });
+      });
+    });
+
+    it('uses a function packagesPath', done => {
+      webpack(createWebpackConfig({
+        options: {
+          packagesPath: packagePath => path.join('func-packages', packagePath),
+          packages: {
+            'bootstrap': {
+              copy: [{
+                from: 'dist/css', to: 'css/'
+              }],
+              links: [
+                'css/bootstrap.min.css'
+              ]
+            }
+          }
+        }
+      }), (err, result) => {
+        expect(err).toBeFalsy();
+        expect(JSON.stringify(result.compilation.errors)).toBe('[]');
+        expect(areEqualDirectories('../node_modules/bootstrap/dist/css', `${OUTPUT_DIR}/func-packages/bootstrap-${BSV}/css`)).toBe(true);
+        cheerioLoadTags(OUPUT_HTML_FILE, ({ links, scripts }) => {
+          expect(links.length).toBe(2);
+          expect(scripts.length).toBe(2);
+          expect(links).toContainTag({ tagName: 'link', attributes: { 'href': 'style.css', 'rel': 'stylesheet' } });
+          expect(links[1]).toBeTag({ tagName: 'link', attributes: { 'href': `func-packages/bootstrap-${BSV}/css/bootstrap.min.css`, 'rel': 'stylesheet' } });
+          expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'app.js', 'type': 'text/javascript' } });
+          expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'style.js', 'type': 'text/javascript' } });
+
+          done();
+        });
       });
     });
   });
@@ -567,7 +801,7 @@ describe('end to end', () => {
               ]
             }
           },
-          addPackagesPath: (packageName, packageVersion, packagePath) => path.join('my-packages', packageName + '-' + packageVersion, packagePath)
+          addPackagesPath: packagePath => path.join('my-packages', packagePath)
         }
       }), (err, result) => {
         expect(err).toBeFalsy();
@@ -882,6 +1116,38 @@ describe('end to end', () => {
           expect(scripts.length).toBe(2);
           expect(links).toContainTag({ tagName: 'link', attributes: { 'href': 'style.css', 'rel': 'stylesheet' } });
           expect(links[1]).toBeTag({ tagName: 'link', attributes: { 'href': 'packages/bootstrap-fake-version/css/bootstrap.min.css', 'rel': 'stylesheet' } });
+          expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'app.js', 'type': 'text/javascript' } });
+          expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'style.js', 'type': 'text/javascript' } });
+
+          done();
+        });
+      });
+    });
+
+    it('uses a custom getPackagePath option', done => {
+      webpack(createWebpackConfig({
+        options: {
+          packages: {
+            'bootstrap': {
+              copy: [{
+                from: 'dist/css', to: 'css/'
+              }],
+              links: [
+                'css/bootstrap.min.css'
+              ]
+            }
+          },
+          getPackagePath: (packageName, packageVersion, packagePath) => path.join(packageName + '---' + packageVersion + '---', packagePath)
+        }
+      }), (err, result) => {
+        expect(err).toBeFalsy();
+        expect(JSON.stringify(result.compilation.errors)).toBe('[]');
+
+        cheerioLoadTags(OUPUT_HTML_FILE, ({ links, scripts }) => {
+          expect(links.length).toBe(2);
+          expect(scripts.length).toBe(2);
+          expect(links).toContainTag({ tagName: 'link', attributes: { 'href': 'style.css', 'rel': 'stylesheet' } });
+          expect(links[1]).toBeTag({ tagName: 'link', attributes: { 'href': `packages/bootstrap---${BSV}---/css/bootstrap.min.css`, 'rel': 'stylesheet' } });
           expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'app.js', 'type': 'text/javascript' } });
           expect(scripts).toContainTag({ tagName: 'script', attributes: { 'src': 'style.js', 'type': 'text/javascript' } });
 
