@@ -358,7 +358,6 @@ plugins: [
         }
       }
     }
-    append: false,
     useCdn: true,
     getCdnPath: (packageName, packageVersion, packagePath) => `https://unpkg.com/${packageName}@${packageVersion}/${packagePath}`
   })
@@ -408,7 +407,6 @@ plugins: [
         }
       }
     }
-    append: false
   })
 ]
 ```
