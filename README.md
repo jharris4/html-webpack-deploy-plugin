@@ -134,7 +134,14 @@ Several options from the `html-webpack-tags-plugin` are available at these 2 lev
 
 ### Tag Options
 
-The available tag options for **`links`** or **`scripts`** are defined by the [html-webpack-tags-plugin](https://github.com/jharris4/html-webpack-tags-plugin/).
+The available `tag options` for **`links`** or **`scripts`** are defined by the [html-webpack-tags-plugin](https://github.com/jharris4/html-webpack-tags-plugin/).
+
+Additional `tag options` are defined by this plugin:
+
+|Name|Type|Default|Description|
+|:--:|:--:|:-----:|:----------|
+|**`devPath`**|`{String}`|`optional`|Alternative path to use for the tag when `webpack.mode === "development"`|
+|**`cdnPath`**|`{String}`|`optional`|Alternative path to use for the tag when the **`useCdn`** option inherited by the tag is true|
 
 ---
 
