@@ -21,15 +21,15 @@ $ npm install --save-dev html-webpack-deploy-plugin
 Integration
 -----------
 
-The **`chunksSortMode`** option of [html-webpack-plugin](https://github.com/jantimon/html-webpack-plugin) has a **default** value of `auto`.
+The **`chunksSortMode`** option of [html-webpack-plugin](https://github.com/jantimon/html-webpack-plugin) `3.x` has a **default** value of `auto`.
 
-When this plugin is configured with the **`variableName`** or [tags plugin](https://github.com/jharris4/html-webpack-tags-plugin/) **`external`** tag options you need to set this value to **'none'**, like this:
+This option is known to cause issues with `code splitting` or `lazy loaded bundles` ([#981](https://github.com/jantimon/html-webpack-plugin/issues/981)).
+
+When using this plugin with version `3.x` you should set this **`chunksSortMode`** to **'none'**, like this:
 
 ```js
 new HtmlWebpackPlugin({ chunksSortMode: 'none' })
 ```
-
-This is only necessary if you are using the **`variableName`** or **`external`** tag options to strip packages out of the webpack bundles.
 
 Configuration
 -------------
