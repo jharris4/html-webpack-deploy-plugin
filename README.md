@@ -1,7 +1,9 @@
 Deployment  extension for the HTML Webpack Plugin
 ========================================
 
-Enhances [html-webpack-plugin](https://github.com/jantimon/html-webpack-plugin) allowing you to **copy** and **inject** `assets` or `node_modules package assets`.
+Enhances [html-webpack-plugin](https://github.com/jantimon/html-webpack-plugin) allowing you to **copy** `assets` or `node_modules package assets` into your webpack build and **inject** them as tags into your `html`.
+
+Built on top of the [html-webpack-tags](https://github.com/jharris4/html-webpack-tags-plugin) and [copy-webpack](https://github.com/webpack-contrib/copy-webpack-plugin) plugins.
 
 Installation
 ------------
@@ -115,9 +117,9 @@ These options are only available at the root level of the plugin config.
 
 ### All Level Options
 
-Several options from the `html-webpack-tags-plugin` are available at all levels.
+Several options from the [html-webpack-tags-plugin](https://github.com/jharris4/html-webpack-tags-plugin) are available at all levels.
 
-Options are passed down the levels, and overriden if specified.
+Options are passed down the levels, and overriden if specified at a lower level.
 
 |Name|Type|Default|Description|
 |:--:|:--:|:-----:|:----------|
@@ -130,8 +132,6 @@ Options are passed down the levels, and overriden if specified.
 |**`publicPath`**|`{Boolean\|String\|Function}`|`undefined`|Shortcut to specifying `usePublicPath` and `addPublicPath`|
 
 ### Assets and Packages Options
-
-Several options from the `html-webpack-tags-plugin` are available at these 2 levels:
 
 |Name|Type|Default|Description|
 |:--:|:--:|:-----:|:----------|
