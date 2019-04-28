@@ -154,7 +154,7 @@ Additional `tag options` are defined by this plugin:
 
 |Name|Type|Default|Description|
 |:--:|:--:|:-----:|:----------|
-|**`devPath`**|`{String}`|`optional`|Alternative path to use for the tag when `webpack.mode === "development"`|
+|**`devPath`**|`{String}`|`optional`|Alternative path to use for the tag when `webpack.mode === "development"`. Only used when the **`useCdn`** option inherited by the tag is false|
 |**`cdnPath`**|`{String}`|`optional`|Alternative path to use for the tag when the **`useCdn`** option inherited by the tag is true|
 
 ---
@@ -395,14 +395,16 @@ plugins: [
         copy: [{ from: 'umd', to: '' }],
         scripts: {
           variableName: 'React'
-          path: 'react.production.min.js'
+          path: 'react.production.min.js',
+          devPath: 'react.development.js'
         }
       },
       'react-dom': {
         copy: [{ from: 'umd', to: '' }],
         scripts: {
           variableName: 'ReactDOM'
-          path: 'react-dom.production.min.js'
+          path: 'react-dom.production.min.js',
+          devPath: 'react-dom.development.js'
         }
       }
     }
@@ -426,7 +428,26 @@ The generated `index.html` looks like:
  </head>
  <body>
   <script src="my-public-path/packages/react-16.8.6/react.production.min.js"></script>
-  <script src="my-public-path/packages/react-dom-16.8.6/react-dom.production.js"></script>
+  <script src="my-public-path/packages/react-dom-16.8.6/react-dom.production.min.js"></script>
+  <script src="any-webpack-generated-bundles.js"></script>
+  <!-- react & react-dom were removed from webpack bundles automatically -->
+ </body>
+</html>
+```
+
+Or in **development** mode because the **`devPath`** option was specified, the generated `index.html` looks like:
+
+```html
+<!DOCTYPE html>
+<html>
+ <head>
+   <meta charset="UTF-8">
+   <title>Webpack App</title>
+   <link href="any-webpack-generated-styles.css" rel="stylesheet">
+ </head>
+ <body>
+  <script src="my-public-path/packages/react-16.8.6/react.development.js"></script>
+  <script src="my-public-path/packages/react-dom-16.8.6/react-dom.development.js"></script>
   <script src="any-webpack-generated-bundles.js"></script>
   <!-- react & react-dom were removed from webpack bundles automatically -->
  </body>
