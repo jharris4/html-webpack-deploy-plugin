@@ -108,7 +108,7 @@ These options are only available at the root level of the plugin config.
 |**`addPackagesPath`**|`{Function}`|`see below`|The function to call to get the output path for `packages` when copying and injecting them|
 |**`packagesPath`**|`{Boolean|String|Function}`|Shortcut for specifying both **`usePackagesPath`** and **`addPackagesPath`** at the same time|
 |**`getPackagePath`**|`{Function}`|`see below`|The function to call to get the output path for a `package` & `version` when copying and injecting it|
-|**`findNodeModulesPath`**|`{Function}`|`see below`|The function to call to find the `node_modules` directory where packages to be deployed are installed. By default this searches upwards in the current working directory|
+|**`findNodeModulesPath`**|`{Function}`|`see below`|The function to call to find the `node_modules` directory where packages to be deployed are installed so their `version` can be read from their `package.json` file. The default is to search upwards in the current working directory|
 |**`files`**|`{Array<String>}`|`[]`|If specified this plugin will only inject tags into the html-webpack-plugin instances that are injecting into these files  (uses [minimatch](https://github.com/isaacs/minimatch))|
 |**`prependExternals`**|`{Boolean}`|`true`|Whether to default **`append`** to **false** for any `<script>` `tag` that has an **`external`** or **`variableName`** option specified|
 
@@ -167,8 +167,10 @@ The default options for this plugin are shown below:
 
 ```js
 const path = require('path');
+const findUp = require('find-up');
+const slash = require('slash'); // fixes slashes in file paths for windows
 
-const DEFAULT_ROOT_OPTIONS = {
+const DEFAULT_OPTIONS = {
   assets: {},
   packages: {},
   useAssetsPath: true,
@@ -176,10 +178,7 @@ const DEFAULT_ROOT_OPTIONS = {
   usePackagesPath: true,
   addPackagesPath: packagePath => path.join('packages', packagePath),
   getPackagePath: (packageName, packageVersion, packagePath) => path.join(packageName + '-' + packageVersion, packagePath),
-  findNodeModulesPath: (cwd, packageName) => findUp.sync(slash(path.join('node_modules', packageName)), { cwd })
-};
-
-const DEFAULT_MAIN_OPTIONS = {
+  findNodeModulesPath: (cwd, packageName) => findUp.sync(slash(path.join('node_modules', packageName)), { cwd }),
   useCdn: false,
   getCdnPath: (packageName, packageVersion, packagePath) => `https://unpkg.com/${packageName}@${packageVersion}/${packagePath}`
 };
