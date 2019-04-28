@@ -194,7 +194,7 @@ This option requires an object with any of the `copy`, `links`, or `scripts` pro
 
 The settings for these are based on the [copy-webpack-plugin](https://github.com/webpack-contrib/copy-webpack-plugin) and the [html-webpack-tags-plugin](https://github.com/jharris4/html-webpack-tags-plugin)
 
-For example, to copy some assets to webpack, and insert a `\<link\>` and `\<script\>` tag:
+For example, to copy some assets to webpack, and insert a `<link>` and `<script>` tag:
 
 ```js
 const pluginOptions = {
@@ -233,7 +233,7 @@ This option requires an object with any of the `copy`, `links`, or `scripts` pro
 
 The settings for these are based on the [copy-webpack-plugin](https://github.com/webpack-contrib/copy-webpack-plugin) and the [html-webpack-tags-plugin](https://github.com/jharris4/html-webpack-tags-plugin)
 
-For example, to copy some assets from `bootstrap` to webpack, and insert a `\<link\>` and `\<script\>` tag for bootstrap:
+For example, to copy some assets from `bootstrap` to webpack, and insert a `<link>` and `<script>` tag for bootstrap:
 
 ```js
 const pluginOptions = {
