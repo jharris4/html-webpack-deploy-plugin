@@ -20,7 +20,8 @@ const DEFAULT_ROOT_OPTIONS = {
   usePackagesPath: true,
   addPackagesPath: packagePath => path.join('packages', packagePath),
   getPackagePath: (packageName, packageVersion, packagePath) => path.join(packageName + '-' + packageVersion, packagePath),
-  findNodeModulesPath: (cwd, packageName) => findUp.sync(slash(path.join('node_modules', packageName)), { cwd })
+  findNodeModulesPath: (cwd, packageName) => findUp.sync(slash(path.join('node_modules', packageName)), { cwd }),
+  copyFromSlashAbsolute: true
 };
 
 const DEFAULT_MAIN_OPTIONS = {
@@ -103,7 +104,7 @@ const getValidatedRootOptions = (options, optionPath, defaultRootOptions = DEFAU
     ...defaultRootOptions
   };
   const validatedMainOptions = getValidatedMainOptions(options, optionPath, defaultMainOptions);
-  const { assets, packages, files, getPackagePath, findNodeModulesPath, prependExternals } = options;
+  const { assets, packages, files, getPackagePath, findNodeModulesPath, prependExternals, copyFromSlashAbsolute } = options;
 
   const assetsPathOptions = processShortcuts(options, optionPath, 'assetsPath', 'useAssetsPath', 'addAssetsPath');
   if (isDefined(assetsPathOptions.useAssetsPath)) {
@@ -126,6 +127,10 @@ const getValidatedRootOptions = (options, optionPath, defaultRootOptions = DEFAU
   if (isDefined(findNodeModulesPath)) {
     assert(isFunctionReturningString(findNodeModulesPath), `${optionPath}.findNodeModulesPath should be a function that returns a string`);
     validatedRootOptions.findNodeModulesPath = findNodeModulesPath;
+  }
+  if (isDefined(copyFromSlashAbsolute)) {
+    assert(isBoolean(copyFromSlashAbsolute), `${optionPath}.copyFromSlashAbsolute should be a boolean`);
+    validatedRootOptions.copyFromSlashAbsolute = copyFromSlashAbsolute;
   }
   if (isDefined(prependExternals)) {
     assert(isBoolean(prependExternals), `${optionPath}.prependExternals should be a boolean`);
@@ -207,7 +212,7 @@ const getValidatedPackageOptions = (thePackage, packageName, rootOptions, mainOp
   optionPath = `${optionPath}.${packageName}`;
   const validatedPackage = getValidatedCdnOptions(getTagsLevelOptions(thePackage, optionPath), optionPath, mainOptions);
   const { copy, links, scripts, ...packageOptions } = validatedPackage;
-  const { findNodeModulesPath, getPackagePath, usePackagesPath, addPackagesPath } = rootOptions;
+  const { findNodeModulesPath, getPackagePath, usePackagesPath, addPackagesPath, copyFromSlashAbsolute } = rootOptions;
   const packagePath = findNodeModulesPath(process.cwd(), packageName);
   assert(isString(packagePath), `${optionPath} package path could not be found`);
   const packageFilePath = path.join(packagePath, 'package.json');
@@ -229,7 +234,7 @@ const getValidatedPackageOptions = (thePackage, packageName, rootOptions, mainOp
       const to = getPackagePath(packageName, packageVersion, copyItem.to);
       return {
         ...copyItem,
-        from: path.join(packagePath, copyItem.from),
+        from: (copyFromSlashAbsolute && copyItem.from[0] === '/') ? copyItem.from : path.join(packagePath, copyItem.from),
         to: usePackagesPath ? addPackagesPath(to) : to
       };
     };

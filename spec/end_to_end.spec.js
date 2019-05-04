@@ -81,8 +81,8 @@ const areEqualDirectories = (dirA, dirB, { loose = false, files = null } = {}) =
     compareSyncOptions.includeFilter = includeFilter;
   }
   const compareResult = dirCompare.compareSync(pathA, pathB, compareSyncOptions);
-  if (files && compareResult.totalFiles !== files.length) {
-    return false;
+  if (files) {
+    return compareResult.equalFiles === files.length;
   }
   return (loose ? (compareResult.right === 0) : compareResult.same);
 };
@@ -378,6 +378,44 @@ describe('end to end', () => {
 
           done();
         });
+      });
+    });
+
+    it('uses a boolean true copyFromSlashAbsolute', done => {
+      const fromPath = path.join(FIXTURES_PATH, 'a-file');
+      webpack(createWebpackConfig({
+        options: {
+          copyFromSlashAbsolute: true,
+          assets: {
+            copy: [{
+              from: fromPath, to: 'files'
+            }]
+          }
+        }
+      }), (err, result) => {
+        expect(err).toBeFalsy();
+        expect(JSON.stringify(result.compilation.errors)).toBe('[]');
+        expect(areEqualDirectories(FIXTURES_PATH, `${OUTPUT_DIR}/assets/files`, { files: ['a-file'] })).toBe(true);
+        done();
+      });
+    });
+
+    it('uses a boolean false copyFromSlashAbsolute', done => {
+      const fromPath = 'spec/fixtures/a-file';
+      webpack(createWebpackConfig({
+        options: {
+          copyFromSlashAbsolute: false,
+          assets: {
+            copy: [{
+              from: fromPath, to: 'files'
+            }]
+          }
+        }
+      }), (err, result) => {
+        expect(err).toBeFalsy();
+        expect(JSON.stringify(result.compilation.errors)).toBe('[]');
+        expect(areEqualDirectories(FIXTURES_PATH, `${OUTPUT_DIR}/assets/files`, { files: ['a-file'] })).toBe(true);
+        done();
       });
     });
   });

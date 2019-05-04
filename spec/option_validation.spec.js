@@ -64,8 +64,6 @@ describe('option validation', () => {
       done();
     });
 
-    // TODO - ASSETS.APPEND GOES HERE
-
     it('should not throw an error if there are assets with empty copy array', done => {
       const theFunction = () => {
         return new HtmlWebpackDeployPlugin({ assets: { copy: [] } });
@@ -249,8 +247,6 @@ describe('option validation', () => {
       expect(theFunction).toThrowError(/(options.packages.bad-package package.json was malformed)/);
       done();
     });
-
-    // TODO - PACKAGES.PACKAGE.APPEND GOES HERE
 
     it('should throw an error for a package that has a non boolean useCdn', done => {
       const theFunction = () => {
@@ -665,6 +661,35 @@ describe('option validation', () => {
       };
 
       expect(theFunction).toThrowError(/(options.hash should not be used with either useHash or addHash)/);
+      done();
+    });
+  });
+
+  describe('options.copyFromSlashAbsolute', () => {
+    it('should not throw an error if the copyFromSlashAbsolute is true', done => {
+      const theFunction = () => {
+        return new HtmlWebpackDeployPlugin({ copyFromSlashAbsolute: true });
+      };
+
+      expect(theFunction).not.toThrowError();
+      done();
+    });
+
+    it('should not throw an error if the copyFromSlashAbsolute is false', done => {
+      const theFunction = () => {
+        return new HtmlWebpackDeployPlugin({ copyFromSlashAbsolute: false });
+      };
+
+      expect(theFunction).not.toThrowError();
+      done();
+    });
+
+    it('should throw an error if the copyFromSlashAbsolute flag is not a boolean', done => {
+      const theFunction = () => {
+        return new HtmlWebpackDeployPlugin({ copyFromSlashAbsolute: 123 });
+      };
+
+      expect(theFunction).toThrowError(/(options.copyFromSlashAbsolute should be a boolean)/);
       done();
     });
   });

@@ -113,6 +113,7 @@ These options are only available at the root level of the plugin config.
 |**`findNodeModulesPath`**|`{Function}`|`see below`|The function to call to find the `node_modules` directory where packages to be deployed are installed so their `version` can be read from their `package.json` file. The default is to search upwards in the current working directory|
 |**`files`**|`{Array<String>}`|`[]`|If specified this plugin will only inject tags into the html-webpack-plugin instances that are injecting into these files  (uses [minimatch](https://github.com/isaacs/minimatch))|
 |**`prependExternals`**|`{Boolean}`|`true`|Whether to default **`append`** to **false** for any `<script>` `tag` that has an **`external`** or **`variableName`** option specified|
+|**`copyFromSlashAbsolute`**|`{Boolean}`|`true`|Whether to treat `copy.from` fields as absolute if they begin with a `/` character|
 
 
 ### All Level Options
