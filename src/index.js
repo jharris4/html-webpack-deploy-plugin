@@ -20,8 +20,7 @@ const DEFAULT_ROOT_OPTIONS = {
   usePackagesPath: true,
   addPackagesPath: packagePath => path.join('packages', packagePath),
   getPackagePath: (packageName, packageVersion, packagePath) => path.join(packageName + '-' + packageVersion, packagePath),
-  findNodeModulesPath: (cwd, packageName) => findUp.sync(slash(path.join('node_modules', packageName)), { cwd }),
-  copyFromSlashAbsolute: true
+  findNodeModulesPath: (cwd, packageName) => findUp.sync(slash(path.join('node_modules', packageName)), { cwd })
 };
 
 const DEFAULT_MAIN_OPTIONS = {
@@ -73,7 +72,7 @@ const getGroupLevelOptions = (options, optionPath, defaultOptions = {}) => {
   }
 };
 
-const getTagsLevelOptions = (options, optionPath) => {
+const getTagsLevelOptions = (options, optionPath, useFromAbsolute = false) => {
   assert(!(isObject(options) && isDefined(options.tags)), `${optionPath}.tags is not supported`);
   const validatedOptions = getValidatedOptions(options, optionPath, {});
   if (isDefined(validatedOptions.copy)) {
@@ -81,6 +80,9 @@ const getTagsLevelOptions = (options, optionPath) => {
     assert(isArray(copy) || isObject(copy), `${optionPath}.copy should be an object or array of objects`);
     if (isObject(copy)) {
       assert(isString(copy.from) && isString(copy.to), `${optionPath}.copy should be an object with string properties from & to`);
+      if (useFromAbsolute && isDefined(copy.fromAbsolute)) {
+        assert(isBoolean(copy.fromAbsolute), `${optionPath}.copy.fromAbsolute should be a boolean`);
+      }
       validatedOptions.copy = [copy];
     } else {
       const copyList = [];
@@ -104,7 +106,7 @@ const getValidatedRootOptions = (options, optionPath, defaultRootOptions = DEFAU
     ...defaultRootOptions
   };
   const validatedMainOptions = getValidatedMainOptions(options, optionPath, defaultMainOptions);
-  const { assets, packages, files, getPackagePath, findNodeModulesPath, prependExternals, copyFromSlashAbsolute } = options;
+  const { assets, packages, files, getPackagePath, findNodeModulesPath, prependExternals } = options;
 
   const assetsPathOptions = processShortcuts(options, optionPath, 'assetsPath', 'useAssetsPath', 'addAssetsPath');
   if (isDefined(assetsPathOptions.useAssetsPath)) {
@@ -127,10 +129,6 @@ const getValidatedRootOptions = (options, optionPath, defaultRootOptions = DEFAU
   if (isDefined(findNodeModulesPath)) {
     assert(isFunctionReturningString(findNodeModulesPath), `${optionPath}.findNodeModulesPath should be a function that returns a string`);
     validatedRootOptions.findNodeModulesPath = findNodeModulesPath;
-  }
-  if (isDefined(copyFromSlashAbsolute)) {
-    assert(isBoolean(copyFromSlashAbsolute), `${optionPath}.copyFromSlashAbsolute should be a boolean`);
-    validatedRootOptions.copyFromSlashAbsolute = copyFromSlashAbsolute;
   }
   if (isDefined(prependExternals)) {
     assert(isBoolean(prependExternals), `${optionPath}.prependExternals should be a boolean`);
@@ -210,9 +208,9 @@ const getValidatedPackagesOptions = (packages, rootOptions, mainOptions, optionP
 
 const getValidatedPackageOptions = (thePackage, packageName, rootOptions, mainOptions, optionPath) => {
   optionPath = `${optionPath}.${packageName}`;
-  const validatedPackage = getValidatedCdnOptions(getTagsLevelOptions(thePackage, optionPath), optionPath, mainOptions);
+  const validatedPackage = getValidatedCdnOptions(getTagsLevelOptions(thePackage, optionPath, true), optionPath, mainOptions);
   const { copy, links, scripts, ...packageOptions } = validatedPackage;
-  const { findNodeModulesPath, getPackagePath, usePackagesPath, addPackagesPath, copyFromSlashAbsolute } = rootOptions;
+  const { findNodeModulesPath, getPackagePath, usePackagesPath, addPackagesPath } = rootOptions;
   const packagePath = findNodeModulesPath(process.cwd(), packageName);
   assert(isString(packagePath), `${optionPath} package path could not be found`);
   const packageFilePath = path.join(packagePath, 'package.json');
@@ -231,11 +229,14 @@ const getValidatedPackageOptions = (thePackage, packageName, rootOptions, mainOp
   // always copy even when using cdn
   if (isDefined(copy)) {
     const processCopyItem = copyItem => {
-      const to = getPackagePath(packageName, packageVersion, copyItem.to);
+      let { fromAbsolute = false, from, to, ...otherOptions } = copyItem;
+      to = getPackagePath(packageName, packageVersion, to);
+      to = usePackagesPath ? addPackagesPath(to) : to;
+      from = fromAbsolute ? from : path.join(packagePath, from);
       return {
-        ...copyItem,
-        from: (copyFromSlashAbsolute && copyItem.from[0] === '/') ? copyItem.from : path.join(packagePath, copyItem.from),
-        to: usePackagesPath ? addPackagesPath(to) : to
+        ...otherOptions,
+        from,
+        to
       };
     };
     validatedPackage.copy = copy.map(processCopyItem);

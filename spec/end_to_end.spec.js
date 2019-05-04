@@ -381,11 +381,22 @@ describe('end to end', () => {
       });
     });
 
-    it('uses a boolean true copyFromSlashAbsolute', done => {
+    it('uses a boolean true package copy fromAbsolute', done => {
       const fromPath = path.join(FIXTURES_PATH, 'a-file');
       webpack(createWebpackConfig({
         options: {
-          copyFromSlashAbsolute: true,
+          packages: {
+            'bootstrap': {
+              copy: [{
+                fromAbsolute: true,
+                from: fromPath,
+                to: 'css/'
+              }],
+              links: [
+                'css/bootstrap.min.css'
+              ]
+            }
+          },
           assets: {
             copy: [{
               from: fromPath, to: 'files'
@@ -395,26 +406,32 @@ describe('end to end', () => {
       }), (err, result) => {
         expect(err).toBeFalsy();
         expect(JSON.stringify(result.compilation.errors)).toBe('[]');
-        expect(areEqualDirectories(FIXTURES_PATH, `${OUTPUT_DIR}/assets/files`, { files: ['a-file'] })).toBe(true);
+        expect(areEqualDirectories(FIXTURES_PATH, `${OUTPUT_DIR}/packages/bootstrap-${BSV}/css`, { files: ['a-file'] })).toBe(true);
         done();
       });
     });
 
-    it('uses a boolean false copyFromSlashAbsolute', done => {
-      const fromPath = 'spec/fixtures/a-file';
+    it('uses a boolean false package copy fromAbsolute', done => {
+      const fromPath = 'dist/css';
       webpack(createWebpackConfig({
         options: {
-          copyFromSlashAbsolute: false,
-          assets: {
-            copy: [{
-              from: fromPath, to: 'files'
-            }]
+          packages: {
+            'bootstrap': {
+              copy: [{
+                fromAbsolute: false,
+                from: fromPath,
+                to: 'css/'
+              }],
+              links: [
+                'css/bootstrap.min.css'
+              ]
+            }
           }
         }
       }), (err, result) => {
         expect(err).toBeFalsy();
         expect(JSON.stringify(result.compilation.errors)).toBe('[]');
-        expect(areEqualDirectories(FIXTURES_PATH, `${OUTPUT_DIR}/assets/files`, { files: ['a-file'] })).toBe(true);
+        expect(areEqualDirectories('../node_modules/bootstrap/dist/css', `${OUTPUT_DIR}/packages/bootstrap-${BSV}/css`, { files: ['bootstrap.min.css'] })).toBe(true);
         done();
       });
     });

@@ -224,6 +224,33 @@ describe('option validation', () => {
       done();
     });
 
+    it('should not throw an error if the package.copy.fromAbsolute is true', done => {
+      const theFunction = () => {
+        return new HtmlWebpackDeployPlugin({ packages: { 'the-package': { copy: { from: 'src', to: 'dest' } } } });
+      };
+
+      expect(theFunction).not.toThrowError();
+      done();
+    });
+
+    it('should not throw an error if the package.copy.fromAbsolute is false', done => {
+      const theFunction = () => {
+        return new HtmlWebpackDeployPlugin({ packages: { 'the-package': { copy: { fromAbsolute: false, from: 'src', to: 'dest' } } } });
+      };
+
+      expect(theFunction).not.toThrowError();
+      done();
+    });
+
+    it('should throw an error if the package.copy.fromAbsolute flag is not a boolean', done => {
+      const theFunction = () => {
+        return new HtmlWebpackDeployPlugin({ packages: { 'the-package': { copy: { fromAbsolute: 123, from: 'src', to: 'dest' } } } });
+      };
+
+      expect(theFunction).toThrowError(/(options.packages.the-package.copy.fromAbsolute should be a boolean)/);
+      done();
+    });
+
     it('should throw an error for a package that does not exist', done => {
       const theFunction = () => {
         return new HtmlWebpackDeployPlugin({ packages: { 'package-does-not-exist': { copy: { from: 'src', to: 'dest' } } } });
@@ -661,35 +688,6 @@ describe('option validation', () => {
       };
 
       expect(theFunction).toThrowError(/(options.hash should not be used with either useHash or addHash)/);
-      done();
-    });
-  });
-
-  describe('options.copyFromSlashAbsolute', () => {
-    it('should not throw an error if the copyFromSlashAbsolute is true', done => {
-      const theFunction = () => {
-        return new HtmlWebpackDeployPlugin({ copyFromSlashAbsolute: true });
-      };
-
-      expect(theFunction).not.toThrowError();
-      done();
-    });
-
-    it('should not throw an error if the copyFromSlashAbsolute is false', done => {
-      const theFunction = () => {
-        return new HtmlWebpackDeployPlugin({ copyFromSlashAbsolute: false });
-      };
-
-      expect(theFunction).not.toThrowError();
-      done();
-    });
-
-    it('should throw an error if the copyFromSlashAbsolute flag is not a boolean', done => {
-      const theFunction = () => {
-        return new HtmlWebpackDeployPlugin({ copyFromSlashAbsolute: 123 });
-      };
-
-      expect(theFunction).toThrowError(/(options.copyFromSlashAbsolute should be a boolean)/);
       done();
     });
   });
