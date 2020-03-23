@@ -59,7 +59,7 @@ new HtmlWebpackDeployPlugin({
   },
   packages: {
     'bootstrap': {
-      copy: [{ from 'dist/bootstrap.min.css', to: 'bootstrap.min.css'}],
+      copy: [{ from: 'dist/bootstrap.min.css', to: 'bootstrap.min.css'}],
       links: {
         useCdn: true,
         path: 'bootstrap.min.css',
