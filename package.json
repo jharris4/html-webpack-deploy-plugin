@@ -1,6 +1,6 @@
 {
   "name": "html-webpack-deploy-plugin",
-  "version": "2.0.6",
+  "version": "2.0.7",
   "description": "Add the ability to deploy assets from local files or node_modules packages",
   "repository": {
     "type": "git",
