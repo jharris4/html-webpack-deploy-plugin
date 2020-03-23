@@ -27,30 +27,30 @@
     "src/index.js"
   ],
   "peerDependencies": {
-    "html-webpack-plugin": "^2.24.0 || ^3.0.0",
+    "html-webpack-plugin": "^2.24.0 || ^3.0.0 || ^4.0.0",
     "webpack": "^2.2.1 || ^3.0.0 || ^4.0.0"
   },
   "dependencies": {
-    "copy-webpack-plugin": "^5.0.3",
-    "find-up": "^3.0.0",
-    "html-webpack-tags-plugin": "^2.0.12"
+    "copy-webpack-plugin": "^5.1.1",
+    "find-up": "^4.1.0",
+    "html-webpack-tags-plugin": "^2.0.17"
   },
   "devDependencies": {
-    "bootstrap": "4.3.1",
-    "bulma": "^0.7.4",
+    "bootstrap": "4.4.1",
+    "bulma": "0.8.1",
     "cheerio": "^1.0.0-rc.3",
-    "css-loader": "^2.1.1",
-    "dir-compare": "^1.7.2",
-    "find-up": "^3.0.0",
-    "html-webpack-plugin": "^3.2.0",
-    "jasmine": "^3.4.0",
-    "jasmine-expect": "^4.0.1",
-    "mini-css-extract-plugin": "^0.6.0",
-    "rimraf": "^2.6.3",
-    "semistandard": "^13.0.1",
+    "css-loader": "^3.4.2",
+    "dir-compare": "^2.2.0",
+    "find-up": "^4.1.0",
+    "html-webpack-plugin": "^4.0.1",
+    "jasmine": "^3.5.0",
+    "jasmine-expect": "^4.0.3",
+    "mini-css-extract-plugin": "^0.9.0",
+    "rimraf": "^3.0.2",
+    "semistandard": "^14.2.0",
     "slash": "^3.0.0",
-    "style-loader": "^0.23.1",
-    "webpack": "^4.30.0"
+    "style-loader": "^1.1.3",
+    "webpack": "^4.42.0"
   },
   "scripts": {
     "prepublish": "npm run test",

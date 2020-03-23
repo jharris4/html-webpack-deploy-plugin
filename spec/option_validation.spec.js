@@ -37,7 +37,7 @@ describe('option validation', () => {
   });
 
   describe('options.assets', () => {
-    let savedCwd = process.cwd();
+    const savedCwd = process.cwd();
     beforeEach(done => {
       process.chdir(path.join(savedCwd, 'spec', 'fixtures'));
       done();
@@ -141,7 +141,7 @@ describe('option validation', () => {
   });
 
   describe('options.packages', () => {
-    let savedCwd = process.cwd();
+    const savedCwd = process.cwd();
     beforeEach(done => {
       process.chdir(path.join(savedCwd, 'spec', 'fixtures'));
       done();
@@ -320,13 +320,20 @@ describe('option validation', () => {
 
     it('should throw an error for a package with scripts that are objects with string variableName and object external', done => {
       const theFunction = () => {
-        return new HtmlWebpackDeployPlugin({ packages: { 'the-package': { scripts: {
-          path: 'a-path',
-          variableName: 'shortcutVariableName',
-          external: {
-            packageName: 'packageName',
-            variableName: 'variableName'
-          } } } } });
+        return new HtmlWebpackDeployPlugin({
+          packages: {
+            'the-package': {
+              scripts: {
+                path: 'a-path',
+                variableName: 'shortcutVariableName',
+                external: {
+                  packageName: 'packageName',
+                  variableName: 'variableName'
+                }
+              }
+            }
+          }
+        });
       };
       expect(theFunction).toThrowError(/(options.packages.the-package.scripts object variableName and external cannot be used together)/);
       done();
@@ -515,7 +522,7 @@ describe('option validation', () => {
 
     it('should not throw an error if the files options are strings', done => {
       const theFunction = () => {
-        return new HtmlWebpackDeployPlugin({ files: [ 'a-file', 'b-file' ] });
+        return new HtmlWebpackDeployPlugin({ files: ['a-file', 'b-file'] });
       };
       expect(theFunction).not.toThrowError();
       done();
@@ -737,7 +744,7 @@ function runTestsForOption (optionNamePath) {
 
     it(`should throw an error if the ${optionPath} contains string and a boolean`, done => {
       const theFunction = () => {
-        return createPlugin([`foo.js`, true, `bar.css`]);
+        return createPlugin(['foo.js', true, 'bar.css']);
       };
 
       expect(theFunction).toThrowError(new RegExp(`(options.${optionPath} items must be an object or string)`));
@@ -746,7 +753,7 @@ function runTestsForOption (optionNamePath) {
 
     it(`should not throw an error if the ${optionPath} contains strings and objects`, done => {
       const theFunction = () => {
-        return createPlugin([`foo.js`, { path: `file.js` }, `bar.css`]);
+        return createPlugin(['foo.js', { path: 'file.js' }, 'bar.css']);
       };
 
       expect(theFunction).not.toThrowError();

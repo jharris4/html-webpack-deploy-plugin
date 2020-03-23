@@ -20,7 +20,7 @@ const DEFAULT_ROOT_OPTIONS = {
   usePackagesPath: true,
   addPackagesPath: packagePath => path.join('packages', packagePath),
   getPackagePath: (packageName, packageVersion, packagePath) => path.join(packageName + '-' + packageVersion, packagePath),
-  findNodeModulesPath: (cwd, packageName) => findUp.sync(slash(path.join('node_modules', packageName)), { cwd })
+  findNodeModulesPath: (cwd, packageName) => findUp.sync(slash(path.join('node_modules', packageName)), { cwd, type: 'directory' })
 };
 
 const DEFAULT_MAIN_OPTIONS = {
@@ -261,7 +261,7 @@ const getValidatedPackageOptions = (thePackage, packageName, rootOptions, mainOp
   const baseOptions = { ...mainOptions, ...packageOptions };
 
   const applyCdnDevPackagePath = (tag, optionName) => {
-    let { useCdn, getCdnPath } = { ...baseOptions, ...getValidatedCdnOptions(tag, optionPath) };
+    const { useCdn, getCdnPath } = { ...baseOptions, ...getValidatedCdnOptions(tag, optionPath) };
 
     let cdnPath = tag.path;
     if (isDefined(tag.cdnPath)) {
