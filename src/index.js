@@ -360,7 +360,9 @@ HtmlWebpackDeployPlugin.prototype.apply = function (compiler) {
     links = links.map(applyDevPath);
     scripts = scripts.map(applyDevPath);
   }
-  new CopyWebpackPlugin(copy).apply(compiler);
+  if (copy && (Array.isArray(copy) ? copy.length > 0 : true)) {
+    new CopyWebpackPlugin({ patterns: copy }).apply(compiler);
+  }
   new HtmlWebpackTagsPlugin({ links, scripts, files, prependExternals }).apply(compiler);
 };
 
