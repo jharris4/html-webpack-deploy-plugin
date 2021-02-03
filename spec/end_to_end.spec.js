@@ -78,9 +78,10 @@ const WEBPACK_MODULE = {
 const areEqualDirectories = (dirA, dirB, { loose = false, files = null } = {}) => {
   const pathA = path.resolve(__dirname, dirA);
   const pathB = path.resolve(__dirname, dirB);
-  const includeFilter = files ? files.join(',') : null;
+  const includeFilter = files ? files.join(',') : '**.js,**.js.map,**.css';
   const compareSyncOptions = {
-    compareSize: true
+    compareSize: false,
+    compareContent: false
   };
   if (includeFilter) {
     compareSyncOptions.includeFilter = includeFilter;

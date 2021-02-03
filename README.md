@@ -12,6 +12,8 @@ Installation
 $ npm install --save-dev html-webpack-deploy-plugin
 ```
 
+- You must be running **Node 10.0** along with **Webpack 5.0** or higher for version `3.x` of this plugin.
+
 - You must be running **Node 8.6** or higher for version `2.x` of this plugin.
 
 - This plugin was **renamed** from `html-webpack-deploy-assets-plugin` to `html-webpack-deploy-plugin` in version `2.x`.
