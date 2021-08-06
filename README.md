@@ -71,7 +71,7 @@ new HtmlWebpackDeployPlugin({
     'react': {
       copy: [{ from: 'umd', to: '' }],
       scripts: {
-        variableName: 'React'
+        variableName: 'React',
         path: 'react.production.min.js',
         cdnPath: 'umd/react.production.min.js',
       }
@@ -79,7 +79,7 @@ new HtmlWebpackDeployPlugin({
     'react-dom': {
       copy: [{ from: 'umd', to: '' }],
       scripts: {
-        variableName: 'ReactDOM'
+        variableName: 'ReactDOM',
         path: 'react-dom.production.min.js',
         cdnPath: 'umd/react-dom.production.min.js',
       },
@@ -210,7 +210,7 @@ const pluginOptions = {
   assets: {
     copy: [
       { from: 'src-path/assets', to: 'dst-path/assets' },
-      { from: 'src-path/js', to: 'dst-path/js' }
+      { from: 'src-path/js', to: 'dst-path/js' },
       { from: 'src-path/css/src-file.png', to: 'dst-path/dst-file.png' }
     ],
     links: [
@@ -352,7 +352,7 @@ plugins: [
       'react': {
         copy: [{ from: 'umd', to: '' }],
         scripts: {
-          variableName: 'React'
+          variableName: 'React',
           path: 'react.production.min.js',
           cdnPath: 'umd/react.production.min.js',
         }
@@ -360,7 +360,7 @@ plugins: [
       'react-dom': {
         copy: [{ from: 'umd', to: '' }],
         scripts: {
-          variableName: 'ReactDOM'
+          variableName: 'ReactDOM',
           path: 'react-dom.production.min.js',
           cdnPath: 'umd/react-dom.production.min.js',
         }
@@ -403,7 +403,7 @@ plugins: [
       'react': {
         copy: [{ from: 'umd', to: '' }],
         scripts: {
-          variableName: 'React'
+          variableName: 'React',
           path: 'react.production.min.js',
           devPath: 'react.development.js'
         }
@@ -411,7 +411,7 @@ plugins: [
       'react-dom': {
         copy: [{ from: 'umd', to: '' }],
         scripts: {
-          variableName: 'ReactDOM'
+          variableName: 'ReactDOM',
           path: 'react-dom.production.min.js',
           devPath: 'react-dom.development.js'
         }
